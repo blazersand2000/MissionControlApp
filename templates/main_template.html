@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+
+<html>
+	<head>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<link rel="stylesheet" type= "text/css" href="{{ url_for('static', filename='styles.css') }}">
+		<title>{% block title %}{% endblock %}</title>
+	</head>
+	<body>
+		<header>
+			<ul class="nav">
+				<h1 class="nav">Mission Control Application</h1>
+				<li class="nav"><a class="nav" href="{{ url_for('index') }}">Home</a></li>
+				<li class="nav"><a class="nav" href="{{ url_for('showMissions') }}">Missions</a></li>
+				<li class="nav"><a class="nav" href="{{ url_for('showFacilities') }}">Launch Facilities</a></li>
+				<li class="nav"><a class="nav" href="{{ url_for('showRockets') }}">Rockets</a></li>
+			</ul>
+		</header>
+		<p/>
+		{% block body %}{% endblock %}
+	</body>
+</html>

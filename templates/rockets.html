@@ -1,0 +1,9 @@
+{% extends "main_template.html" %}
+{% from 'macros.html' import GenerateTable %}
+
+{% block title %}
+Rockets
+{% endblock %}
+{% block body %}
+{{ GenerateTable("Rockets", headers, rows) }}
+{% endblock %}

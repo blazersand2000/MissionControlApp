@@ -1,0 +1,23 @@
+{% macro GenerateTable(title, headers, rows) %}
+	{% if rows %}
+		<table class="table-borders">
+			<caption>
+				{{title}}
+			</caption>
+			<tr>
+				{% for header in headers %}
+				<th class="table-borders table-cell-formatting">{{header}}</th>
+				{% endfor %}
+			</tr>
+			{% for row in rows %}
+			<tr>
+				{% for value in row %}
+					<td class="table-borders table-cell-formatting">{{value}}</td>
+				{% endfor %}
+			</tr>
+			{% endfor %}
+		</table>
+	{% else %}
+		No records found!
+	{% endif %}
+{% endmacro %}

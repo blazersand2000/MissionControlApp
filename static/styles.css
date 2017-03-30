@@ -1,0 +1,52 @@
+ul.nav
+{
+	list-style-type: none;
+	text-align: center;
+	display: block;
+	margin: 0;
+	padding: 0;
+	overflow: hidden;
+	background-color: #5f94fc;
+}
+
+li.nav
+{
+	float: left;
+}
+
+li a.nav
+{
+	display: inline-block;
+	color: white;
+	text-align: center;
+	padding: 14px 16px;
+	text-decoration: none;
+	font-family: "Trebuchet MS", Helvetica, sans-serif;
+}
+
+li a:hover.nav
+{
+	background-color: #7ca8ff;
+}
+
+h1.nav
+{
+	float: left;
+	margin: 0;
+	padding: 5px 30px 0px 0px;
+	font-family: "Trebuchet MS", Helvetica, sans-serif;
+	color: #003091;
+	vertical-align: bottom;
+}
+
+.table-borders
+{
+	border: 1px solid black;
+	border-collapse: collapse;
+}
+
+.table-cell-formatting
+{
+	padding: 5px;
+	text-align: left;
+}
