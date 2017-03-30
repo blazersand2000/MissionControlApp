@@ -1,5 +1,3 @@
 # MissionControlApp
 
-Requirements:
--SQLite3
--Flask Python module
+Requirems SQLite3 and Flask (Python module)
