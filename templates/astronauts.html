@@ -2,14 +2,13 @@
 {% from 'macros.html' import GenerateTable, GenerateFormToAddEntry %}
 
 {% block title %}
-Missions
+Astronauts
 {% endblock %}
 {% block body %}
 <section style="float:left">
-    {{ GenerateTable('Missions', headers, rows, 'mid') }}
+	{{ GenerateTable('Astronauts', headers, rows, 'aid') }}
 </section>
 <section style="float:left">
-    {{ GenerateFormToAddEntry('Mission', inputs) }}
+	{{ GenerateFormToAddEntry('Astronaut', inputs) }}
 </section>
-<script type="text/JavaScript" src="{{ url_for('static', filename='scripts.js') }}"></script>
 {% endblock %}

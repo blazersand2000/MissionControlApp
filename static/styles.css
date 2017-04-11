@@ -158,3 +158,8 @@ th {
 	background: #EA7B00;
 	color: #fff;
 }
+.form-style-2 input[type=submit]:disabled,
+.form-style-2 input[type=button]:disabled{
+	background: lightgray;
+	color: #fff;
+}

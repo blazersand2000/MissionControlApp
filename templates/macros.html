@@ -13,14 +13,21 @@
 			{% for row in rows %}
 			<tr id ="{{row[keyName]}}">
 				{% for value in row %}
-					<td>
-						{{value|safe}}
-					</td>
+					{% if loop.index0 > 1 %}
+						<td>
+							{{value|safe}}
+						</td>
+					{% endif %}
 				{% endfor %}
+				{% if row[1] == 1 %}
+					{% set disabled = 'disabled' %}
+				{% else %}
+					{% set disabled = '' %}
+				{% endif %}
 				<td>
 					<div class="form-style-2" style="width:70px; padding: 0px 0px 0px 0px;">
 						<form method="post">
-							<input type="submit" value="Delete" name="delete.{{ row[keyName] }}"/>
+							<input type="submit" value="Delete" name="delete.{{ row[0] }}" {{disabled}}/>
 						</form>
 					</div>
 				</td>
@@ -38,23 +45,26 @@
 	<form method="post">
 		{% for fieldName, fieldType, fieldLabel, optionalValues in inputs %}
 			{% if fieldType == 'text' %}
-				<label for="{{fieldName}}"><span>{{fieldLabel}} <span class="required">*</span></span><input type="text" class="input-field" name="{{fieldName}}"/></label>
+				<label for="{{fieldName}}"><span>{{fieldLabel}} <span class="required">*</span></span><input type="text" class="input-field" name="{{fieldName}}" required/></label>
 			{% elif fieldType == 'number' %}
-				<label for="{{fieldName}}"><span>{{fieldLabel}} <span class="required">*</span></span><input type="number" class="input-field" name="{{fieldName}}"/></label>
+				<label for="{{fieldName}}"><span>{{fieldLabel}} <span class="required">*</span></span><input type="number" class="input-field" name="{{fieldName}}" required/></label>
 			{% elif fieldType == 'select' %}
-				<label for="{{fieldName}}"><span>{{fieldLabel}} </span><select name="{{fieldName}}" class="select-field">
-				{% for id, displayName in optionalValues %}
-					<option value="{{id}}">{{displayName}}</option>
-				{% endfor %}
+				<label for="{{fieldName}}"><span>{{fieldLabel}} <span class="required">*</span></span><select name="{{fieldName}}" class="select-field" required>
+					<option disabled selected value> -- select {{fieldLabel}} -- </option>
+					{% for id, displayName in optionalValues %}
+						<option value="{{id}}">{{displayName}}</option>
+					{% endfor %}
 				</select></label>
 			{% elif fieldType == 'selectmultiple' %}
-				<label for="{{fieldName}}"><span>{{fieldLabel}} </span><select multiple name="{{fieldName}}" class="select-field">
-				{% for id, displayName in optionalValues %}
-					<option value="{{id}}">{{displayName}}</option>
+				<label for="{{fieldName}}"><span>{{fieldLabel}} <span class="required">*</span></span><select multiple name="{{fieldName}}" class="select-field" required>
+				{% for name, displayName, id in optionalValues %}
+					<option value="{{name}}" id="{{id}}">{{displayName}}</option>
 				{% endfor %}
 				</select></label>
 			{% elif fieldType == 'datetime' %}
-				<label for="{{fieldName}}"><span>{{fieldLabel}} </span><input type="datetime-local" class="input-field" name="{{fieldName}}"></label>
+				<label for="{{fieldName}}"><span>{{fieldLabel}} <span class="required">*</span></span><input type="datetime-local" class="input-field" name="{{fieldName}}" id="{{optionalValues[0]}}" onchange="changeEnd()" required></label>
+			{% elif fieldType == 'date' %}
+				<label for="{{fieldName}}"><span>{{fieldLabel}} <span class="required">*</span></span><input type="date" class="input-field" name="{{fieldName}}" required></label>
 			{% endif %}
 		{% endfor %}
 		<label><span>&nbsp;</span><input type="submit" value="Add {{entryType}}" /></label>
