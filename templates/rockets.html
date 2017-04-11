@@ -1,9 +1,14 @@
 {% extends "main_template.html" %}
-{% from 'macros.html' import GenerateTable %}
+{% from 'macros.html' import GenerateTable, GenerateFormToAddEntry %}
 
 {% block title %}
 Rockets
 {% endblock %}
 {% block body %}
-{{ GenerateTable("Rockets", headers, rows) }}
+<section style="float:left">
+	{{ GenerateTable('Rockets', headers, rows, 'rid') }}
+</section>
+<section style="float:left">
+	{{ GenerateFormToAddEntry('Rocket', inputs) }}
+</section>
 {% endblock %}

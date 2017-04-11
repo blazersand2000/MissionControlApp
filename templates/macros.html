@@ -1,23 +1,63 @@
-{% macro GenerateTable(title, headers, rows) %}
+{% macro GenerateTable(title, headers, rows, keyName) %}
 	{% if rows %}
-		<table class="table-borders">
+		<table>
 			<caption>
 				{{title}}
 			</caption>
 			<tr>
 				{% for header in headers %}
-				<th class="table-borders table-cell-formatting">{{header}}</th>
+				<th>{{header}}</th>
 				{% endfor %}
+				<th/>
 			</tr>
 			{% for row in rows %}
-			<tr>
+			<tr id ="{{row[keyName]}}">
 				{% for value in row %}
-					<td class="table-borders table-cell-formatting">{{value}}</td>
+					<td>
+						{{value|safe}}
+					</td>
 				{% endfor %}
+				<td>
+					<div class="form-style-2" style="width:70px; padding: 0px 0px 0px 0px;">
+						<form method="post">
+							<input type="submit" value="Delete" name="delete.{{ row[keyName] }}"/>
+						</form>
+					</div>
+				</td>
 			</tr>
 			{% endfor %}
 		</table>
 	{% else %}
 		No records found!
 	{% endif %}
+{% endmacro %}
+
+{% macro GenerateFormToAddEntry(entryType, inputs) %}
+	<div class="form-style-2">
+	<div class="form-style-2-heading">Add new {{entryType}}</div>
+	<form method="post">
+		{% for fieldName, fieldType, fieldLabel, optionalValues in inputs %}
+			{% if fieldType == 'text' %}
+				<label for="{{fieldName}}"><span>{{fieldLabel}} <span class="required">*</span></span><input type="text" class="input-field" name="{{fieldName}}"/></label>
+			{% elif fieldType == 'number' %}
+				<label for="{{fieldName}}"><span>{{fieldLabel}} <span class="required">*</span></span><input type="number" class="input-field" name="{{fieldName}}"/></label>
+			{% elif fieldType == 'select' %}
+				<label for="{{fieldName}}"><span>{{fieldLabel}} </span><select name="{{fieldName}}" class="select-field">
+				{% for id, displayName in optionalValues %}
+					<option value="{{id}}">{{displayName}}</option>
+				{% endfor %}
+				</select></label>
+			{% elif fieldType == 'selectmultiple' %}
+				<label for="{{fieldName}}"><span>{{fieldLabel}} </span><select multiple name="{{fieldName}}" class="select-field">
+				{% for id, displayName in optionalValues %}
+					<option value="{{id}}">{{displayName}}</option>
+				{% endfor %}
+				</select></label>
+			{% elif fieldType == 'datetime' %}
+				<label for="{{fieldName}}"><span>{{fieldLabel}} </span><input type="datetime-local" class="input-field" name="{{fieldName}}"></label>
+			{% endif %}
+		{% endfor %}
+		<label><span>&nbsp;</span><input type="submit" value="Add {{entryType}}" /></label>
+	</form>
+	</div>
 {% endmacro %}
