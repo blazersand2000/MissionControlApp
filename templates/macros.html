@@ -57,8 +57,8 @@
 				</select></label>
 			{% elif fieldType == 'selectmultiple' %}
 				<label for="{{fieldName}}"><span>{{fieldLabel}} <span class="required">*</span></span><select multiple name="{{fieldName}}" class="select-field" required>
-				{% for name, displayName, id in optionalValues %}
-					<option value="{{name}}" id="{{id}}">{{displayName}}</option>
+				{% for id, displayName in optionalValues %}
+					<option value="{{id}}">{{displayName}}</option>
 				{% endfor %}
 				</select></label>
 			{% elif fieldType == 'datetime' %}
