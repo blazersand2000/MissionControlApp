@@ -11,25 +11,34 @@ def index():
 
 @app.route("/missions", methods=["GET", "POST"])
 def showMissions():
+    #open database connection
     conn = sqlite3.connect(dbPath)
     conn.row_factory = sqlite3.Row
     c = conn.cursor()
     
     if request.method == "POST":
+        #determine which form was sent
         for key in request.form:
             if key.startswith('delete.'):
+                #we know the form to delete a row was submitted and the name of the delete button is "delete.<id>"
                 id = key.split('.')[1]
+                #delete mission from database, commit results, and reload the page
                 c.execute("DELETE FROM Mission WHERE mid = ?", (id,))
                 c.execute("DELETE FROM Crew WHERE mid = ?", (id,))
                 conn.commit()
-                return redirect(url_for("showMissions"))
         if request.form["launchTime"]:
+            #in this case we know the add new mission form was submitted, add mission to database
             missionValues = (request.form["rid"], request.form["fid"], request.form["launchTime"], request.form["landTime"])
             c.execute("INSERT INTO Mission (rid, fid, launchTime, landTime) VALUES (?, ?, ?, ?)", missionValues)
+            #make a list of pairs of the mission id we just created with each crew member's id
             astroValues = zip((c.lastrowid,) * len(request.form.getlist("crewMembers")), request.form.getlist("crewMembers"))
+            #add row in crew table for each one of these pairs
             c.executemany("INSERT INTO Crew (mid, aid) VALUES (?, ?)", astroValues)
+
+    #Done handling http POST request. In either a GET or a POST, we now need to gather the data to render the page
     
-    #queries that populate table of missions
+    #queries that populate html table of missions to be rendered
+    #note that || in SQLite means concatenation
     c.execute("SELECT M.mid, 0 AS cannotDelete, R.rname, F.name, M.launchTime, M.landTime, group_concat(A.firstName || ' ' || A.lastName, '<br/>') AS anames FROM Mission M, Rockets R, LaunchFacility F, Crew C, Astronauts A WHERE M.rid = R.rid AND M.fid = F.fid AND M.mid = C.mid AND C.aid = A.aid GROUP BY C.mid;")
     results = c.fetchall()
 
@@ -41,9 +50,11 @@ def showMissions():
     c.execute("SELECT aid, firstName || ' ' || lastName FROM Astronauts")
     astronauts = c.fetchall()
     
+    #close database connection
     conn.commit()
     conn.close()
     
+    #each list within the following list represents a form element we want to render and contains (form element name, type, label to display for it, and extra values if needed like to send list of astronauts to select multiple type)
     formInputs = [['rid', 'select', 'Rocket', rockets], ['fid', 'select', 'Launch Facility', facilities], ['crewMembers', 'selectmultiple', 'Crew Members', astronauts], ['launchTime', 'datetime', 'Launch Time', ["from",]], ['landTime', 'datetime', 'Land Time', ["to",]]]
 
     return render_template("missions.html", headers=("Rocket","Facility","Time of Launch", "Time of Landing", "Crew Members"), rows=results, inputs=formInputs)
