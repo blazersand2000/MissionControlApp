@@ -7,6 +7,7 @@ dbPath = 'db.sqlite3'
 app = Flask(__name__)
 login_manager = LoginManager()
 login_manager.init_app(app)
+app.config["SECRET_KEY"] = "secret"
 
 @app.route("/")
 def index():
@@ -243,6 +244,5 @@ def DBloginUser(username):
     conn.close()
 
 if __name__ == "__main__":
-    app.config["SECRET_KEY"] = "ITSASECRET"
     app.run()
         
