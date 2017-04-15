@@ -12,10 +12,19 @@
 			<ul class="nav">
 				<h1 class="nav">Mission Control Application</h1>
 				<li class="nav"><a class="nav" href="{{ url_for('index') }}">Home</a></li>
+				{% if current_user.is_authenticated %}
 				<li class="nav"><a class="nav" href="{{ url_for('showMissions') }}">Missions</a></li>
 				<li class="nav"><a class="nav" href="{{ url_for('showFacilities') }}">Launch Facilities</a></li>
 				<li class="nav"><a class="nav" href="{{ url_for('showRockets') }}">Rockets</a></li>
 				<li class="nav"><a class="nav" href="{{ url_for('showAstronauts') }}">Astronauts</a></li>
+				{% endif %}
+				<div class="user-greeting">
+					{% if current_user.is_authenticated %}
+  						Hello, {{ current_user.id }}!    <a class="nav" href="{{ url_for('showLogout') }}">(Logout)</a>
+					{% else %}
+						Hello, guest!    <a class="nav" href="{{ url_for('showLogin') }}">Login</a><a class="nav" href="{{ url_for('showSignup') }}">Sign Up</a>
+					{% endif %}
+				</div>
 			</ul>
 		</header>
 		<p/>

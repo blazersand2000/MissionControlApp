@@ -1,0 +1,16 @@
+{% extends "main_template.html" %}
+{% from 'macros.html' import GenerateFormToAddEntry %}
+
+{% block title %}
+Sign Up
+{% endblock %}
+{% block body %}
+<div align="center">
+	{{ GenerateFormToAddEntry('Sign Up', inputs) }}
+	<div class="form-style-2">
+		<span class="required">
+			{{ UserNameAlreadyExists }}
+		</span>
+	</div>
+</div>
+{% endblock %}

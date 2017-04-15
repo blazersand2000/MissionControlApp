@@ -1,0 +1,17 @@
+{% extends "main_template.html" %}
+{% from 'macros.html' import GenerateFormToAddEntry %}
+
+{% block title %}
+Login
+{% endblock %}
+{% block body %}
+<div align="center">
+	{{ GenerateFormToAddEntry('Login', inputs) }}
+	<div class="form-style-2">
+		<span class="required">
+			{{ userNotFound }}
+			{{ wrongPassword }}
+		</span>
+	</div>
+</div>
+{% endblock %}

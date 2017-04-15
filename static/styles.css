@@ -20,7 +20,7 @@ li.nav
 	float: left;
 }
 
-li a.nav
+a.nav
 {
 	display: inline-block;
 	color: var(--light-blue);
@@ -30,7 +30,7 @@ li a.nav
 	font-family: "Trebuchet MS", Helvetica, sans-serif;
 }
 
-li a:hover.nav
+a:hover.nav
 {
 	background-color: var(--medium-blue);
 }
@@ -43,6 +43,21 @@ h1.nav
 	font-family: "Trebuchet MS", Helvetica, sans-serif;
 	color: var(--light-blue);
 	vertical-align: bottom;
+}
+
+.user-greeting
+{
+	float: right;
+	list-style-type: none;
+	text-align: center;
+	margin: 0;
+	overflow: hidden;
+	background-color: var(--dark-blue);
+	text-align: center;
+	vertical-align: center;
+	text-decoration: none;
+	font-family: "Trebuchet MS", Helvetica, sans-serif;
+	color: var(--light-blue);
 }
 
 table {
