@@ -11,7 +11,18 @@ app.config["SECRET_KEY"] = "secret"
 
 @app.route("/")
 def index():
-    return render_template("index.html")
+    if not current_user.is_authenticated:
+        return render_template("index.html")
+    else:
+        previousMissionRows = DBgetRealTimeMissionInfo("previous")
+        currentMissionsRows = DBgetRealTimeMissionInfo("current")
+        nextMissionRows = DBgetRealTimeMissionInfo("next")
+
+        previousMissionHeaders=("Rocket", "Fuel Burned", "Fuel Remaining", "Launch Facility", "Landing Time", "Crew Members")
+        currentMissionHeaders=("Rocket", "Fuel Burned", "Fuel Remaining", "Launch Facility", "Elapsed Mission Time", "Crew Members")
+        nextMissionHeaders=("Rocket", "Fuel Required", "Fuel To Spare", "Launch Facility", "Launch Time", "Crew Members")
+
+        return render_template("index.html", pHeaders=previousMissionHeaders, pRows=previousMissionRows, cHeaders=currentMissionHeaders, cRows=currentMissionsRows, nHeaders=nextMissionHeaders, nRows=nextMissionRows)
 
 @app.route("/missions", methods=["GET", "POST"])
 @login_required
@@ -31,6 +42,7 @@ def showMissions():
                 c.execute("DELETE FROM Mission WHERE mid = ?", (id,))
                 c.execute("DELETE FROM Crew WHERE mid = ?", (id,))
                 conn.commit()
+                return redirect(url_for("showMissions"))
         if request.form["launchTime"]:
             #in this case we know the add new mission form was submitted, add mission to database
             missionValues = (request.form["rid"], request.form["fid"], request.form["launchTime"], request.form["landTime"])
@@ -242,6 +254,26 @@ def DBloginUser(username):
     c.execute("UPDATE Users SET lastLoginTime = datetime('now') WHERE username = ?", (username,))
     conn.commit()
     conn.close()
+
+def DBgetRealTimeMissionInfo(when):
+    conn = sqlite3.connect(dbPath)
+    conn.row_factory = sqlite3.Row
+    c = conn.cursor()
+    if when == "previous":
+        #this will select the most recently completed mission
+        c.execute("SELECT R.rname, R.fuelBurnRate*((strftime('%s',M.landTime) - strftime('%s',M.launchTime))/3600.0) AS fuelBurned, R.fuelTankSize-(R.fuelBurnRate*((strftime('%s',M.landTime) - strftime('%s',M.launchTime))/3600.0)) AS fuelRemaining, F.name, M.landTime, group_concat(A.firstName || ' ' || A.lastName, '<br/>') AS anames FROM Mission M, Rockets R, LaunchFacility F, Crew C, Astronauts A WHERE M.rid = R.rid AND M.fid = F.fid AND M.mid = C.mid AND C.aid = A.aid AND M.landTime < datetime('now') GROUP BY C.mid ORDER BY M.landTime DESC LIMIT 1;")
+        result = c.fetchall()
+    elif when == "current":
+        #this will select the currently in progress missions
+        c.execute("SELECT R.rname, R.fuelBurnRate*((strftime('%s',datetime('now')) - strftime('%s',M.launchTime))/3600.0) AS fuelBurned, R.fuelTankSize-(R.fuelBurnRate*((strftime('%s',datetime('now')) - strftime('%s',M.launchTime))/3600.0)) AS fuelRemaining, F.name, (strftime('%s',datetime('now')) - strftime('%s',M.launchTime))/3600.0 AS elapsed, group_concat(A.firstName || ' ' || A.lastName, '<br/>') AS anames FROM Mission M, Rockets R, LaunchFacility F, Crew C, Astronauts A WHERE M.rid = R.rid AND M.fid = F.fid AND M.mid = C.mid AND C.aid = A.aid AND M.launchTime <= datetime('now') AND M.landTime > datetime('now') GROUP BY C.mid ORDER BY M.launchTime;")
+        result = c.fetchall()
+    elif when == "next":
+        #this will select the next scheduled mission
+        c.execute("SELECT R.rname, R.fuelBurnRate*((strftime('%s',M.landTime) - strftime('%s',M.launchTime))/3600.0) AS fuelRequired, R.fuelTankSize-(R.fuelBurnRate*((strftime('%s',M.landTime) - strftime('%s',M.launchTime))/3600.0)) AS fuelToSpare, F.name, M.launchTime, group_concat(A.firstName || ' ' || A.lastName, '<br/>') AS anames FROM Mission M, Rockets R, LaunchFacility F, Crew C, Astronauts A WHERE M.rid = R.rid AND M.fid = F.fid AND M.mid = C.mid AND C.aid = A.aid AND M.launchTime > datetime('now') GROUP BY C.mid ORDER BY M.landTime ASC LIMIT 1;")
+        result = c.fetchall()
+    conn.commit()
+    conn.close()
+    return result
 
 if __name__ == "__main__":
     app.run()

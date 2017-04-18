@@ -73,3 +73,30 @@
 	</form>
 	</div>
 {% endmacro %}
+
+{% macro GenerateRealTimeInfo(title, headers, rows) %}
+	{% if rows %}
+		<table>
+			<caption>
+				{{title}}
+			</caption>
+			<tr>
+				{% for header in headers %}
+				<th>{{header}}</th>
+				{% endfor %}
+				<th/>
+			</tr>
+			{% for row in rows %}
+			<tr id ="{{row[keyName]}}">
+				{% for key in row.keys() %}
+					<td>
+						{{row[key]}}
+					</td>
+				{% endfor %}
+			</tr>
+			{% endfor %}
+		</table>
+	{% else %}
+		No {{ title }}!
+	{% endif %}
+{% endmacro %}

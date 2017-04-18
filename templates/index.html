@@ -1,12 +1,23 @@
 {% extends "main_template.html" %}
+{% from 'macros.html' import GenerateRealTimeInfo %}
 
 {% block title %}
 Mission Control Application - Home
 {% endblock %}
 
 {% block body %}
-<h2>Welcome to Mission Control!</h2>
-<p/>
-Click the above links to view and edit missions, rockets, or launch facilities.
+
+{% if not current_user.is_authenticated %}
+    <h2>Welcome to Mission Control!</h2>
+    <p/>
+    Please login or sign up to use this system.
+{% else %}
+    <div id="dynamic">
+        {{ GenerateRealTimeInfo('Last Completed Mission', pHeaders, pRows) }}
+        {{ GenerateRealTimeInfo('Missions In Progress', cHeaders, cRows) }}
+        {{ GenerateRealTimeInfo('Next Scheduled Mission', nHeaders, nRows) }}
+    </div>
+
+{% endif %}
 
 {% endblock %}

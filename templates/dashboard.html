@@ -1,0 +1,7 @@
+{% extends "main_template.html" %}
+{% from 'macros.html' import GenerateRealTimeInfo %}
+
+{% block body %}
+    {{ GenerateRealTimeInfo('Last Completed Mission', pHeaders, pRows) }}
+    {{ GenerateRealTimeInfo('Missions In Progress', cHeaders, cRows) }}
+{% endblock %}
