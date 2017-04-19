@@ -56,7 +56,7 @@ def showMissions():
     
     #queries that populate html table of missions to be rendered
     #note that || in SQLite means concatenation
-    c.execute("SELECT M.mid, 0 AS cannotDelete, R.rname, F.name, M.launchTime, M.landTime, group_concat(A.firstName || ' ' || A.lastName, '<br/>') AS anames FROM Mission M, Rockets R, LaunchFacility F, Crew C, Astronauts A WHERE M.rid = R.rid AND M.fid = F.fid AND M.mid = C.mid AND C.aid = A.aid GROUP BY C.mid;")
+    c.execute("SELECT M.mid, M.mid IN (SELECT M1.mid FROM Mission M1 WHERE M1.launchTime < datetime('now')) AS cannotDelete, R.rname, F.name, M.launchTime, M.landTime, group_concat(A.firstName || ' ' || A.lastName, '<br/>') AS anames FROM Mission M, Rockets R, LaunchFacility F, Crew C, Astronauts A WHERE M.rid = R.rid AND M.fid = F.fid AND M.mid = C.mid AND C.aid = A.aid GROUP BY C.mid;")
     results = c.fetchall()
 
     #queries that populate rockets, facilities, and astronauts for the 'add new mission' form
