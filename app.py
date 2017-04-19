@@ -265,7 +265,7 @@ def DBgetRealTimeMissionInfo(when):
         result = c.fetchall()
     elif when == "current":
         #this will select the currently in progress missions
-        c.execute("SELECT R.rname, R.fuelBurnRate*((strftime('%s',datetime('now')) - strftime('%s',M.launchTime))/3600.0) AS fuelBurned, R.fuelTankSize-(R.fuelBurnRate*((strftime('%s',datetime('now')) - strftime('%s',M.launchTime))/3600.0)) AS fuelRemaining, F.name, (strftime('%s',datetime('now')) - strftime('%s',M.launchTime))/3600.0 AS elapsed, group_concat(A.firstName || ' ' || A.lastName, '<br/>') AS anames FROM Mission M, Rockets R, LaunchFacility F, Crew C, Astronauts A WHERE M.rid = R.rid AND M.fid = F.fid AND M.mid = C.mid AND C.aid = A.aid AND M.launchTime <= datetime('now') AND M.landTime > datetime('now') GROUP BY C.mid ORDER BY M.launchTime;")
+        c.execute("SELECT M.mid, R.rname, R.fuelBurnRate*((strftime('%s',datetime('now')) - strftime('%s',M.launchTime))/3600.0) AS fuelBurnedLive, R.fuelTankSize-(R.fuelBurnRate*((strftime('%s',datetime('now')) - strftime('%s',M.launchTime))/3600.0)) AS fuelRemainingLive, F.name, strftime('%s',M.launchTime) AS launchTimeLive, group_concat(A.firstName || ' ' || A.lastName, '<br/>') AS anames FROM Mission M, Rockets R, LaunchFacility F, Crew C, Astronauts A WHERE M.rid = R.rid AND M.fid = F.fid AND M.mid = C.mid AND C.aid = A.aid AND M.launchTime <= datetime('now') AND M.landTime > datetime('now') GROUP BY C.mid ORDER BY M.launchTime;")
         result = c.fetchall()
     elif when == "next":
         #this will select the next scheduled mission

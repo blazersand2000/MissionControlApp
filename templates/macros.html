@@ -87,11 +87,21 @@
 				<th/>
 			</tr>
 			{% for row in rows %}
-			<tr id ="{{row[keyName]}}">
+			<tr>
 				{% for key in row.keys() %}
-					<td>
-						{{row[key]}}
-					</td>
+					{% if key == "launchTimeLive" %}
+						<td>
+							<span id="{{ row['mid'] }}launchTimeLive">
+								<script>
+									refreshElapsed("{{ row[key] }}", "#{{ row['mid'] }}launchTimeLive")
+								</script>
+							</span>
+						</td>
+					{% elif loop.index0 > 0 %}
+						<td>
+							{{ row[key] | safe }}
+						</td>
+					{% endif %}
 				{% endfor %}
 			</tr>
 			{% endfor %}
