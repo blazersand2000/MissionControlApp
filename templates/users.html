@@ -1,0 +1,11 @@
+{% extends "main_template.html" %}
+{% from 'macros.html' import GenerateTable %}
+
+{% block title %}
+Users
+{% endblock %}
+{% block body %}
+<div align="center">
+    {{ GenerateTable('Users', headers, rows, 'uid') }}
+</div>
+{% endblock %}

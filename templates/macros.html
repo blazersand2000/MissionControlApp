@@ -15,7 +15,11 @@
 				{% for value in row %}
 					{% if loop.index0 > 1 %}
 						<td>
-							{{value|safe}}
+							{% if title == "Astronauts" %}
+								<a href="{{ url_for('showAstronautInfo', aid = row[keyName]) }}">{{value|safe}}</a>
+							{% else %}
+								{{value|safe}}
+							{% endif %}
 						</td>
 					{% endif %}
 				{% endfor %}
@@ -84,7 +88,6 @@
 				{% for header in headers %}
 				<th>{{header}}</th>
 				{% endfor %}
-				<th/>
 			</tr>
 			{% for row in rows %}
 			<tr>
@@ -94,6 +97,38 @@
 							<span id="{{ row['mid'] }}launchTimeLive">
 								<script>
 									refreshElapsed("{{ row[key] }}", "#{{ row['mid'] }}launchTimeLive")
+								</script>
+							</span>
+						</td>
+					{% elif key == "landTimeLive" %}
+						<td>
+							<span id="{{ row['mid'] }}landTimeLive">
+								<script>
+									refreshCountdown("{{ row[key] }}", "#{{ row['mid'] }}landTimeLive")
+								</script>
+							</span>
+						</td>
+					{% elif key == "fuelBurnRateLive" %}
+						<td>
+							<span id="{{ row['mid'] }}fuelBurnRateLive">
+								<script>
+									refreshFuelBurned("{{ row['launchTimeLive'] }}", "{{ row[key] }}", "#{{ row['mid'] }}fuelBurnRateLive")
+								</script>
+							</span>
+						</td>
+					{% elif key == "fuelTankSizeLive" %}
+						<td>
+							<span id="{{ row['mid'] }}fuelTankSizeLive">
+								<script>
+									refreshFuelRemaining("{{ row['launchTimeLive'] }}", "{{ row['fuelBurnRateLive'] }}", "{{ row[key] }}", "#{{ row['mid'] }}fuelTankSizeLive")
+								</script>
+							</span>
+						</td>
+					{% elif key == "countdownToLaunchLive" %}
+						<td>
+							<span id="{{ row['mid'] }}countdownToLaunchLive">
+								<script>
+									refreshCountdown("{{ row[key] }}", "#{{ row['mid'] }}countdownToLaunchLive")
 								</script>
 							</span>
 						</td>

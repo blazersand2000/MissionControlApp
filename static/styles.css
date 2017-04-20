@@ -4,6 +4,11 @@
   --dark-blue: #2D6AE3;
 }
 
+.light-text
+{
+	color: var(--light-blue);
+}
+
 ul.nav
 {
 	list-style-type: none;
@@ -63,6 +68,7 @@ h1.nav
 table {
     border-collapse: collapse;
     width: 100%;
+	table-layout: auto;
 }
 
 th, td {
@@ -76,6 +82,7 @@ caption {
 	font-weight: bold;
 	font-style: italic;
 	font-size: 15px;
+	color: var(--light-blue);
 }
 
 tr {
@@ -96,6 +103,7 @@ th {
 	max-width: 650px;
 	padding: 20px 12px 10px 20px;
 	font: 13px Arial, Helvetica, sans-serif;
+	color: var(--light-blue);
 }
 .form-style-2-heading{
 	font-weight: bold;

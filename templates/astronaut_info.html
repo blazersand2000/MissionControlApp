@@ -1,0 +1,11 @@
+{% extends "main_template.html" %}
+{% from 'macros.html' import GenerateTable, GenerateFormToAddEntry %}
+
+{% block title %}
+Astronaut Information
+{% endblock %}
+{% block body %}
+	<h2 class="light-text">
+		This page will eventually have information about the astronaut named {{first}} {{last}} born on {{dob}}.
+	</h2>
+{% endblock %}

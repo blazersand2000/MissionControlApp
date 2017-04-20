@@ -8,15 +8,17 @@ Mission Control Application - Home
 {% block body %}
 
 {% if not current_user.is_authenticated %}
-    <h2>Welcome to Mission Control!</h2>
-    <p/>
-    Please login or sign up to use this system.
+    <div class="light-text">
+        <h2>Welcome to Mission Control!</h2>
+        <p/>
+        Please login or sign up to use this system.
+    </div>
 {% else %}
-    <div id="dynamic">
+    <section style="width: 100%">
         {{ GenerateRealTimeInfo('Last Completed Mission', pHeaders, pRows) }}
         {{ GenerateRealTimeInfo('Missions In Progress', cHeaders, cRows) }}
         {{ GenerateRealTimeInfo('Next Scheduled Mission', nHeaders, nRows) }}
-    </div>
+    </section>
 
 {% endif %}
 

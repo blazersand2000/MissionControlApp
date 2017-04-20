@@ -6,6 +6,17 @@
 		<link rel="stylesheet" type= "text/css" href="{{ url_for('static', filename='styles.css') }}">
 		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.0/jquery.min.js"></script>
 		<script type="text/JavaScript" src="{{ url_for('static', filename='scripts.js') }}"></script>
+		<style>
+			body
+			{ 
+				background-image: url("{{ url_for('static', filename='images/planet.jpg') }}");
+				background-color: black;
+				background-repeat: no-repeat;
+				background-attachment: fixed;
+				background-position: center;
+				/*background-size: contain;*/
+			}
+		</style>
 		<title>{% block title %}{% endblock %}</title>
 	</head>
 	<body>
@@ -18,6 +29,7 @@
 				<li class="nav"><a class="nav" href="{{ url_for('showFacilities') }}">Launch Facilities</a></li>
 				<li class="nav"><a class="nav" href="{{ url_for('showRockets') }}">Rockets</a></li>
 				<li class="nav"><a class="nav" href="{{ url_for('showAstronauts') }}">Astronauts</a></li>
+				<li class="nav"><a class="nav" href="{{ url_for('showUsers') }}">Users</a></li>
 				{% endif %}
 				<div class="user-greeting">
 					{% if current_user.is_authenticated %}

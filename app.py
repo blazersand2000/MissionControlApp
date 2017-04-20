@@ -19,8 +19,8 @@ def index():
         nextMissionRows = DBgetRealTimeMissionInfo("next")
 
         previousMissionHeaders=("Rocket", "Fuel Burned", "Fuel Remaining", "Launch Facility", "Landing Time", "Crew Members")
-        currentMissionHeaders=("Rocket", "Fuel Burned", "Fuel Remaining", "Launch Facility", "Elapsed Mission Time", "Crew Members")
-        nextMissionHeaders=("Rocket", "Fuel Required", "Fuel To Spare", "Launch Facility", "Launch Time", "Crew Members")
+        currentMissionHeaders=("Rocket", "Fuel Burned", "Fuel Remaining", "Launch Facility", "Elapsed Mission Time", "Remaining Mission Time", "Crew Members")
+        nextMissionHeaders=("Rocket", "Fuel Required", "Fuel To Spare", "Launch Facility", "Launch Time", "Countdown To Launch", "Crew Members")
 
         return render_template("index.html", pHeaders=previousMissionHeaders, pRows=previousMissionRows, cHeaders=currentMissionHeaders, cRows=currentMissionsRows, nHeaders=nextMissionHeaders, nRows=nextMissionRows)
 
@@ -56,7 +56,7 @@ def showMissions():
     
     #queries that populate html table of missions to be rendered
     #note that || in SQLite means concatenation
-    c.execute("SELECT M.mid, 0 AS cannotDelete, R.rname, F.name, M.launchTime, M.landTime, group_concat(A.firstName || ' ' || A.lastName, '<br/>') AS anames FROM Mission M, Rockets R, LaunchFacility F, Crew C, Astronauts A WHERE M.rid = R.rid AND M.fid = F.fid AND M.mid = C.mid AND C.aid = A.aid GROUP BY C.mid;")
+    c.execute("SELECT M.mid, 0 AS cannotDelete, R.rname, F.name, M.launchTime, M.landTime, group_concat(A.firstName || ' ' || A.lastName, '<br/>') AS anames FROM Mission M, Rockets R, LaunchFacility F, Crew C, Astronauts A WHERE M.rid = R.rid AND M.fid = F.fid AND M.mid = C.mid AND C.aid = A.aid GROUP BY C.mid ORDER BY M.launchTime;")
     results = c.fetchall()
 
     #queries that populate rockets, facilities, and astronauts for the 'add new mission' form
@@ -161,6 +161,36 @@ def showAstronauts():
     
     return render_template("astronauts.html", headers=("First Name","Last Name","Date of Birth","Hours Flown"), rows=results, inputs=formInputs)
 
+@app.route("/astronauts/<aid>")
+@login_required
+def showAstronautInfo(aid):
+    conn = sqlite3.connect(dbPath)
+    conn.row_factory = sqlite3.Row
+    c = conn.cursor()
+   
+    c.execute("SELECT firstName, lastName, dob FROM Astronauts WHERE aid = ?", (aid,))
+    results = c.fetchone()
+    
+    conn.commit()
+    conn.close()
+
+    return render_template("astronaut_info.html", first=results["firstName"], last=results["lastName"], dob=results["dob"])
+
+@app.route("/users")
+@login_required
+def showUsers():
+    conn = sqlite3.connect(dbPath)
+    conn.row_factory = sqlite3.Row
+    c = conn.cursor()
+    
+    c.execute("SELECT uid, 0 AS cannotDelete, username, firstName, lastName, lastLoginTime FROM Users;")
+    results = c.fetchall()
+    
+    conn.commit()
+    conn.close()
+    
+    return render_template("users.html", headers=("Username","First Name","Last Name","Last Login"), rows=results)
+
 @app.route("/login", methods=["GET", "POST"])
 def showLogin():
     if current_user.is_authenticated:
@@ -174,6 +204,7 @@ def showLogin():
                 user = User(userRecord["username"], userRecord["password"])
                 user.authenticated = True
                 login_user(user)
+                DBloginUser(user.id)
                 return redirect(url_for("index"))
             else:
                 print("wrong password")
@@ -255,21 +286,22 @@ def DBloginUser(username):
     conn.commit()
     conn.close()
 
-def DBgetRealTimeMissionInfo(when):
+def DBgetRealTimeMissionInfo(pointInTime):
     conn = sqlite3.connect(dbPath)
     conn.row_factory = sqlite3.Row
     c = conn.cursor()
-    if when == "previous":
+    if pointInTime == "previous":
         #this will select the most recently completed mission
-        c.execute("SELECT M.mid, R.rname, R.fuelBurnRate*((strftime('%s',M.landTime) - strftime('%s',M.launchTime))/3600.0) AS fuelBurned, R.fuelTankSize-(R.fuelBurnRate*((strftime('%s',M.landTime) - strftime('%s',M.launchTime))/3600.0)) AS fuelRemaining, F.name, M.landTime, group_concat(A.firstName || ' ' || A.lastName, '<br/>') AS anames FROM Mission M, Rockets R, LaunchFacility F, Crew C, Astronauts A WHERE M.rid = R.rid AND M.fid = F.fid AND M.mid = C.mid AND C.aid = A.aid AND M.landTime < datetime('now') GROUP BY C.mid ORDER BY M.landTime DESC LIMIT 1;")
+        c.execute("SELECT M.mid, R.rname, round(R.fuelBurnRate*((strftime('%s',M.landTime) - strftime('%s',M.launchTime))/3600.0),1) AS fuelBurned, round(R.fuelTankSize-(R.fuelBurnRate*((strftime('%s',M.landTime) - strftime('%s',M.launchTime))/3600.0)),1) AS fuelRemaining, F.name, M.landTime, group_concat(A.firstName || ' ' || A.lastName, '<br/>') AS anames FROM Mission M, Rockets R, LaunchFacility F, Crew C, Astronauts A WHERE M.rid = R.rid AND M.fid = F.fid AND M.mid = C.mid AND C.aid = A.aid AND strftime('%s',M.landTime) < strftime('%s',datetime('now')) GROUP BY C.mid ORDER BY M.landTime DESC LIMIT 1;")
         result = c.fetchall()
-    elif when == "current":
+    elif pointInTime == "current":
         #this will select the currently in progress missions
-        c.execute("SELECT M.mid, R.rname, R.fuelBurnRate*((strftime('%s',datetime('now')) - strftime('%s',M.launchTime))/3600.0) AS fuelBurnedLive, R.fuelTankSize-(R.fuelBurnRate*((strftime('%s',datetime('now')) - strftime('%s',M.launchTime))/3600.0)) AS fuelRemainingLive, F.name, strftime('%s',M.launchTime) AS launchTimeLive, group_concat(A.firstName || ' ' || A.lastName, '<br/>') AS anames FROM Mission M, Rockets R, LaunchFacility F, Crew C, Astronauts A WHERE M.rid = R.rid AND M.fid = F.fid AND M.mid = C.mid AND C.aid = A.aid AND M.launchTime <= datetime('now') AND M.landTime > datetime('now') GROUP BY C.mid ORDER BY M.launchTime;")
+        c.execute("SELECT M.mid, R.rname, R.fuelBurnRate AS fuelBurnRateLive, R.fuelTankSize AS fuelTankSizeLive, F.name, strftime('%s',M.launchTime) AS launchTimeLive, strftime('%s',M.landTime) AS landTimeLive, group_concat(A.firstName || ' ' || A.lastName, '<br/>') AS anames FROM Mission M, Rockets R, LaunchFacility F, Crew C, Astronauts A WHERE M.rid = R.rid AND M.fid = F.fid AND M.mid = C.mid AND C.aid = A.aid AND launchTimeLive <= strftime('%s',datetime('now')) AND landTimeLive > strftime('%s',datetime('now')) GROUP BY C.mid ORDER BY M.landTime;")
         result = c.fetchall()
-    elif when == "next":
+        print(result)
+    elif pointInTime == "next":
         #this will select the next scheduled mission
-        c.execute("SELECT M.mid, R.rname, R.fuelBurnRate*((strftime('%s',M.landTime) - strftime('%s',M.launchTime))/3600.0) AS fuelRequired, R.fuelTankSize-(R.fuelBurnRate*((strftime('%s',M.landTime) - strftime('%s',M.launchTime))/3600.0)) AS fuelToSpare, F.name, M.launchTime, group_concat(A.firstName || ' ' || A.lastName, '<br/>') AS anames FROM Mission M, Rockets R, LaunchFacility F, Crew C, Astronauts A WHERE M.rid = R.rid AND M.fid = F.fid AND M.mid = C.mid AND C.aid = A.aid AND M.launchTime > datetime('now') GROUP BY C.mid ORDER BY M.landTime ASC LIMIT 1;")
+        c.execute("SELECT M.mid, R.rname, R.fuelBurnRate*((strftime('%s',M.landTime) - strftime('%s',M.launchTime))/3600.0) AS fuelRequired, R.fuelTankSize-(R.fuelBurnRate*((strftime('%s',M.landTime) - strftime('%s',M.launchTime))/3600.0)) AS fuelToSpare, F.name, M.launchTime, strftime('%s',M.launchTime) AS countdownToLaunchLive, group_concat(A.firstName || ' ' || A.lastName, '<br/>') AS anames FROM Mission M, Rockets R, LaunchFacility F, Crew C, Astronauts A WHERE M.rid = R.rid AND M.fid = F.fid AND M.mid = C.mid AND C.aid = A.aid AND strftime('%s',M.launchTime) > strftime('%s',datetime('now')) GROUP BY C.mid ORDER BY M.landTime ASC LIMIT 1;")
         result = c.fetchall()
     conn.commit()
     conn.close()
