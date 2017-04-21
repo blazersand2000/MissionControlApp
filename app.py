@@ -198,7 +198,7 @@ def showUsers():
     conn.row_factory = sqlite3.Row
     c = conn.cursor()
     
-    c.execute("SELECT uid, 0 AS cannotDelete, username, firstName, lastName, lastLoginTime FROM Users;")
+    c.execute("SELECT U.uid, 0 AS cannotDelete, U.username, U.firstName, U.lastName, U.lastLoginTime FROM Users U, Permissions P WHERE U.pid = P.pid;")
     results = c.fetchall()
     
     conn.commit()
@@ -223,6 +223,8 @@ def showLogin():
             user = User(userRecord["username"], userRecord["password"], True)
             #check password
             if user.check_password(request.form["password"]):
+                #set User object permission based on permission for this user found in database
+                user.permission = userRecord["pid"]
                 user.authenticated = True
                 #login user to flask_login session
                 login_user(user)
@@ -231,10 +233,8 @@ def showLogin():
                 #user is now logged in, redirect to home page
                 return redirect(url_for("index"))
             else:
-                print("wrong password")
                 wrongPassword="Pasword is incorrect"
         else:
-            print("user not found")
             userNotFound="User doesn't exist"
 
     #this information will be used by the Jinja to render login form
@@ -257,17 +257,25 @@ def showSignup():
             logout_user()
             #creates user object, the false parameter indicates password being passed in is unhashed
             user = User(request.form["username"], request.form["password"], False)
+            user.permission = request.form["permission"]
             user.authenticated = True
             #login user to flask_login session
             login_user(user)
             #add user record to DB
-            DBaddUser(request.form["firstName"], request.form["lastName"], request.form["username"], user.pw_hash)
+            DBaddUser(request.form["firstName"], request.form["lastName"], request.form["username"], user.pw_hash, user.permission)
             #record a login event with DB which updates user's last login time
             DBloginUser(request.form["username"])
             return redirect(url_for("index"))
 
     #information that Jinja will use to generate the login form when rendering the page
-    formInputs = [['firstName', 'text', 'First Name', []], ['lastName', 'text', 'Last Name', []], ['username', 'text', 'Username', []], ['password', 'password', 'Password', []]]
+    conn = sqlite3.connect(dbPath)
+    conn.row_factory = sqlite3.Row
+    c = conn.cursor()
+    c.execute("SELECT pid, pname FROM Permissions WHERE pid <> 1")
+    permissions = c.fetchall()
+    conn.commit()
+    conn.close()
+    formInputs = [['firstName', 'text', 'First Name', []], ['lastName', 'text', 'Last Name', []], ['username', 'text', 'Username', []], ['password', 'password', 'Password', []], ['permission', 'radio', 'Permission Level', permissions]]
     return render_template("signup.html", inputs=formInputs, UserNameAlreadyExists=UserNameAlreadyExists)
 
 @app.route("/logout")
@@ -293,6 +301,8 @@ class User(UserMixin):
             self.pw_hash = password
         else:
             self.set_password(password)
+        #by default the minimum permission a registered user can have is 2 (read only)
+        self.permission = 2
 
     def set_password(self, password):
         self.pw_hash = generate_password_hash(password)
@@ -323,12 +333,12 @@ def DBgetUser(username):
 
     return userRecord
 
-def DBaddUser(firstname, lastname, username, password):
+def DBaddUser(firstname, lastname, username, password, permission):
     """Adds user record to DB"""
     conn = sqlite3.connect(dbPath)
     conn.row_factory = sqlite3.Row
     c = conn.cursor()
-    c.execute("INSERT INTO Users (firstName, lastName, username, password, regTime) VALUES (?, ?, ?, ?, datetime('now'))", (firstname, lastname, username, password))
+    c.execute("INSERT INTO Users (firstName, lastName, username, password, pid, regTime) VALUES (?, ?, ?, ?, ?, datetime('now'))", (firstname, lastname, username, password, permission))
     conn.commit()
     conn.close()
 
@@ -354,7 +364,6 @@ def DBgetRealTimeMissionInfo(pointInTime):
         #this will select the currently in progress missions
         c.execute("SELECT M.mid, R.rname, R.fuelBurnRate AS fuelBurnRateLive, R.fuelTankSize AS fuelTankSizeLive, F.name, strftime('%s',M.launchTime) AS launchTimeLive, strftime('%s',M.landTime) AS landTimeLive, group_concat(A.firstName || ' ' || A.lastName, '<br/>') AS anames FROM Mission M, Rockets R, LaunchFacility F, Crew C, Astronauts A WHERE M.rid = R.rid AND M.fid = F.fid AND M.mid = C.mid AND C.aid = A.aid AND launchTimeLive <= strftime('%s',datetime('now')) AND landTimeLive > strftime('%s',datetime('now')) GROUP BY C.mid ORDER BY M.launchTime DESC;")
         result = c.fetchall()
-        print(result)
     elif pointInTime == "next":
         #this will select the next scheduled mission
         c.execute("SELECT M.mid, R.rname, R.fuelBurnRate*((strftime('%s',M.landTime) - strftime('%s',M.launchTime))/3600.0) AS fuelRequired, R.fuelTankSize-(R.fuelBurnRate*((strftime('%s',M.landTime) - strftime('%s',M.launchTime))/3600.0)) AS fuelToSpare, F.name, M.launchTime, strftime('%s',M.launchTime) AS countdownToLaunchLive, group_concat(A.firstName || ' ' || A.lastName, '<br/>') AS anames FROM Mission M, Rockets R, LaunchFacility F, Crew C, Astronauts A WHERE M.rid = R.rid AND M.fid = F.fid AND M.mid = C.mid AND C.aid = A.aid AND strftime('%s',M.launchTime) > strftime('%s',datetime('now')) GROUP BY C.mid ORDER BY M.landTime ASC LIMIT 1;")

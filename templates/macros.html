@@ -71,6 +71,12 @@
 				<label for="{{fieldName}}"><span>{{fieldLabel}} <span class="required">*</span></span><input type="datetime-local" class="input-field" name="{{fieldName}}" id="{{optionalValues[0]}}" onchange="changeEnd()" required></label>
 			{% elif fieldType == 'date' %}
 				<label for="{{fieldName}}"><span>{{fieldLabel}} <span class="required">*</span></span><input type="date" class="input-field" name="{{fieldName}}" required></label>
+			{% elif fieldType == 'radio' %}
+				<label for="{{fieldName}}"><span>{{fieldLabel}} <span class="required">*</span></span>
+				{% for id, displayName in optionalValues %}
+					<input type="radio" name="permission" value="{{id}}" required> {{displayName}}
+				{% endfor %}
+				</label>
 			{% endif %}
 		{% endfor %}
 		<label><span>&nbsp;</span><input type="submit" value="{{submitButtonText}}"/></label>
