@@ -1,11 +1,15 @@
 {% extends "main_template.html" %}
-{% from 'macros.html' import GenerateTable, GenerateFormToAddEntry %}
+{% from 'macros.html' import GenerateInfoBox %}
 
 {% block title %}
-Astronaut Information
+Astronaut Information - {{first}} {{last}}
 {% endblock %}
 {% block body %}
-	<h2 class="light-text">
+	<!--<h2 class="light-text">
 		This page will eventually have information about the astronaut named {{first}} {{last}} born on {{dob}}.
 	</h2>
+	<br>-->
+	<section style="float:left">
+		{{ GenerateInfoBox("", info) }}
+	</section>
 {% endblock %}

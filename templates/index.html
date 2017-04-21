@@ -15,9 +15,9 @@ Mission Control Application - Home
     </div>
 {% else %}
     <section style="width: 100%">
-        {{ GenerateRealTimeInfo('Last Completed Mission', pHeaders, pRows) }}
-        {{ GenerateRealTimeInfo('Missions In Progress', cHeaders, cRows) }}
         {{ GenerateRealTimeInfo('Next Scheduled Mission', nHeaders, nRows) }}
+        {{ GenerateRealTimeInfo('Missions In Progress', cHeaders, cRows) }}
+        {{ GenerateRealTimeInfo('Last Completed Mission', pHeaders, pRows) }}
     </section>
 
 {% endif %}

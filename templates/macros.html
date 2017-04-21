@@ -145,3 +145,22 @@
 		No {{ title }}!
 	{% endif %}
 {% endmacro %}
+
+{% macro GenerateInfoBox(title, infoDict) %}
+	{% if infoDict %}
+		<table class="info-box">
+			{% if title %}
+				<caption>
+					{{title}}
+				</caption>
+			{% endif %}
+			{% for key, value in infoDict.items() %}
+				<tr>
+					<td><b>{{ key }}:</b></td><td>{{ value }}</td>
+				</tr>
+			{% endfor %}
+		</table>
+	{% else %}
+		No {{ title }}!
+	{% endif %}
+{% endmacro %}

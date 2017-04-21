@@ -1,4 +1,7 @@
-:root {
+/* form-style-2 css theme based on form-style-2 theme found at https://www.sanwebe.com/2014/08/css-html-forms-designs where permission to freely use was given by the author of the post */
+
+:root
+{
   --light-blue: #EBF2FF;
   --medium-blue: #86AEFD;
   --dark-blue: #2D6AE3;
@@ -65,19 +68,27 @@ h1.nav
 	color: var(--light-blue);
 }
 
-table {
+table
+{
     border-collapse: collapse;
     width: 100%;
 	table-layout: auto;
 }
 
-th, td {
+table.info-box
+{
+	border: 3px ridge var(--medium-blue);
+}
+
+th, td
+{
     text-align: left;
     padding: 8px;
 	font: 13px Arial, Helvetica, sans-serif;
 }
 
-caption {
+caption
+{
 	font: 13px Arial, Helvetica, sans-serif;
 	font-weight: bold;
 	font-style: italic;
@@ -85,27 +96,32 @@ caption {
 	color: var(--light-blue);
 }
 
-tr {
+tr
+{
 	background-color: var(--light-blue)
 }
 
-tr:nth-child(even) {
+tr:nth-child(even)
+{
 	background-color: white
 }
 
-th {
+th
+{
     background-color: var(--medium-blue);
 	font-weight: bold;
 }
 
-.form-style-2{
+.form-style-2
+{
 	width: 375px;
 	max-width: 650px;
 	padding: 20px 12px 10px 20px;
 	font: 13px Arial, Helvetica, sans-serif;
 	color: var(--light-blue);
 }
-.form-style-2-heading{
+.form-style-2-heading
+{
 	font-weight: bold;
 	font-style: italic;
 	border-bottom: 2px solid #ddd;
@@ -113,25 +129,30 @@ th {
 	font-size: 15px;
 	padding-bottom: 3px;
 }
-.form-style-2 label{
+.form-style-2 label
+{
 	display: block;
 	margin: 0px 0px 15px 0px;
 }
-.form-style-2 label > span{
+.form-style-2 label > span
+{
 	width: 35%;
 	font-weight: bold;
 	float: left;
 	padding-top: 8px;
 	padding-right: 5px;
 }
-.form-style-2 span.required{
+.form-style-2 span.required
+{
 	color:red;
 }
-.form-style-2 .tel-number-field{
+.form-style-2 .tel-number-field
+{
 	width: 40px;
 	text-align: center;
 }
-.form-style-2 input.input-field{
+.form-style-2 input.input-field
+{
 	width: 63%;
 	
 }
@@ -139,7 +160,8 @@ th {
 .form-style-2 input.input-field, 
 .form-style-2 .tel-number-field, 
 .form-style-2 .textarea-field, 
- .form-style-2 .select-field{
+ .form-style-2 .select-field
+ {
 	box-sizing: border-box;
 	-webkit-box-sizing: border-box;
 	-moz-box-sizing: border-box;
@@ -156,15 +178,18 @@ th {
 .form-style-2 .input-field:focus, 
 .form-style-2 .tel-number-field:focus, 
 .form-style-2 .textarea-field:focus,  
-.form-style-2 .select-field:focus{
+.form-style-2 .select-field:focus
+{
 	border: 1px solid #0C0;
 }
-.form-style-2 .textarea-field{
+.form-style-2 .textarea-field
+{
 	height:100px;
 	width: 55%;
 }
 .form-style-2 input[type=submit],
-.form-style-2 input[type=button]{
+.form-style-2 input[type=button]
+{
 	border: none;
 	padding: 8px 15px 8px 15px;
 	background: #FF8500;
@@ -177,12 +202,14 @@ th {
 	-moz-border-radius: 3px;
 }
 .form-style-2 input[type=submit]:hover,
-.form-style-2 input[type=button]:hover{
+.form-style-2 input[type=button]:hover
+{
 	background: #EA7B00;
 	color: #fff;
 }
 .form-style-2 input[type=submit]:disabled,
-.form-style-2 input[type=button]:disabled{
+.form-style-2 input[type=button]:disabled
+{
 	background: lightgray;
 	color: #fff;
 }

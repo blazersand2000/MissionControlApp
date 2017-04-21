@@ -1,5 +1,6 @@
 from flask import Flask, render_template, redirect, request, url_for
 from flask_login import LoginManager, UserMixin, login_required, login_user, logout_user, current_user
+from werkzeug.security import generate_password_hash, check_password_hash
 import sqlite3
 
 dbPath = 'db.sqlite3'
@@ -56,7 +57,7 @@ def showMissions():
     
     #queries that populate html table of missions to be rendered
     #note that || in SQLite means concatenation
-    c.execute("SELECT M.mid, M.mid IN (SELECT M1.mid FROM Mission M1 WHERE M1.launchTime < datetime('now')) AS cannotDelete, R.rname, F.name, M.launchTime, M.landTime, group_concat(A.firstName || ' ' || A.lastName, '<br/>') AS anames FROM Mission M, Rockets R, LaunchFacility F, Crew C, Astronauts A WHERE M.rid = R.rid AND M.fid = F.fid AND M.mid = C.mid AND C.aid = A.aid GROUP BY C.mid;")
+    c.execute("SELECT M.mid, M.mid IN (SELECT M1.mid FROM Mission M1 WHERE M1.launchTime < datetime('now')) AS cannotDelete, R.rname, F.name, M.launchTime, M.landTime, group_concat(A.firstName || ' ' || A.lastName, '<br/>') AS anames FROM Mission M, Rockets R, LaunchFacility F, Crew C, Astronauts A WHERE M.rid = R.rid AND M.fid = F.fid AND M.mid = C.mid AND C.aid = A.aid GROUP BY C.mid ORDER BY M.launchTime DESC;")
     results = c.fetchall()
 
     #queries that populate rockets, facilities, and astronauts for the 'add new mission' form
@@ -174,7 +175,7 @@ def showAstronautInfo(aid):
     conn.commit()
     conn.close()
 
-    return render_template("astronaut_info.html", first=results["firstName"], last=results["lastName"], dob=results["dob"])
+    return render_template("astronaut_info.html", first=results["firstName"], last=results["lastName"], dob=results["dob"], info=DBgetAstronautStatsDictionary(aid))
 
 @app.route("/users")
 @login_required
@@ -200,9 +201,10 @@ def showLogin():
     if request.method == "POST":
         userRecord = DBgetUser(request.form["username"])
         if userRecord:
-            if request.form["password"] == userRecord["password"]:
-                user = User(userRecord["username"], userRecord["password"])
+            user = User(userRecord["username"], userRecord["password"], True)
+            if user.check_password(request.form["password"]):
                 user.authenticated = True
+                #login user to flask_login session
                 login_user(user)
                 DBloginUser(user.id)
                 return redirect(url_for("index"))
@@ -226,11 +228,15 @@ def showSignup():
             UserNameAlreadyExists = "Username already exists, try again"
         else:
             logout_user()
-            DBaddUser(request.form["firstName"], request.form["lastName"], request.form["username"], request.form["password"])
-            DBloginUser(request.form["username"])
-            user = User(request.form["username"], request.form["password"])
+            #creates user object, false meaning password being passed in is unhashed
+            user = User(request.form["username"], request.form["password"], False)
             user.authenticated = True
+            #login user to flask_login session
             login_user(user)
+            #add user record to DB
+            DBaddUser(request.form["firstName"], request.form["lastName"], request.form["username"], user.pw_hash)
+            #record a login event with DB which updates user's last login time
+            DBloginUser(request.form["username"])
             return redirect(url_for("index"))
 
     formInputs = [['firstName', 'text', 'First Name', []], ['lastName', 'text', 'Last Name', []], ['username', 'text', 'Username', []], ['password', 'password', 'Password', []]]
@@ -245,16 +251,25 @@ def showLogout():
 
 class User(UserMixin):
 
-    def __init__(self, username, password):
+    def __init__(self, username, password, isPasswordHashedAlready):
         self.id = username
-        self.password = password
+        if isPasswordHashedAlready:
+            self.pw_hash = password
+        else:
+            self.set_password(password)
+
+    def set_password(self, password):
+        self.pw_hash = generate_password_hash(password)
+
+    def check_password(self, password):
+        return check_password_hash(self.pw_hash, password)
 
 @login_manager.user_loader
 def load_user(username):
     userRecord = DBgetUser(username)
 
     if userRecord:
-        return User(userRecord["username"], userRecord["password"])
+        return User(userRecord["username"], userRecord["password"], True)
 
     return None
 
@@ -296,7 +311,7 @@ def DBgetRealTimeMissionInfo(pointInTime):
         result = c.fetchall()
     elif pointInTime == "current":
         #this will select the currently in progress missions
-        c.execute("SELECT M.mid, R.rname, R.fuelBurnRate AS fuelBurnRateLive, R.fuelTankSize AS fuelTankSizeLive, F.name, strftime('%s',M.launchTime) AS launchTimeLive, strftime('%s',M.landTime) AS landTimeLive, group_concat(A.firstName || ' ' || A.lastName, '<br/>') AS anames FROM Mission M, Rockets R, LaunchFacility F, Crew C, Astronauts A WHERE M.rid = R.rid AND M.fid = F.fid AND M.mid = C.mid AND C.aid = A.aid AND launchTimeLive <= strftime('%s',datetime('now')) AND landTimeLive > strftime('%s',datetime('now')) GROUP BY C.mid ORDER BY M.landTime;")
+        c.execute("SELECT M.mid, R.rname, R.fuelBurnRate AS fuelBurnRateLive, R.fuelTankSize AS fuelTankSizeLive, F.name, strftime('%s',M.launchTime) AS launchTimeLive, strftime('%s',M.landTime) AS landTimeLive, group_concat(A.firstName || ' ' || A.lastName, '<br/>') AS anames FROM Mission M, Rockets R, LaunchFacility F, Crew C, Astronauts A WHERE M.rid = R.rid AND M.fid = F.fid AND M.mid = C.mid AND C.aid = A.aid AND launchTimeLive <= strftime('%s',datetime('now')) AND landTimeLive > strftime('%s',datetime('now')) GROUP BY C.mid ORDER BY M.launchTime DESC;")
         result = c.fetchall()
         print(result)
     elif pointInTime == "next":
@@ -306,6 +321,38 @@ def DBgetRealTimeMissionInfo(pointInTime):
     conn.commit()
     conn.close()
     return result
+
+def DBgetAstronautStatsDictionary(aid):
+    conn = sqlite3.connect(dbPath)
+    conn.row_factory = sqlite3.Row
+    c = conn.cursor()
+    d = {}
+
+    #name and age
+    c.execute("SELECT *, cast(strftime('%Y.%m%d', 'now') - strftime('%Y.%m%d', dob) as int) AS age FROM Astronauts WHERE aid = ?;", (aid,))
+    result = c.fetchone()
+    d["Name"] = result["firstName"] + " " + result["lastName"]
+    d["Age"] = result["age"]
+
+    #number of unique crew members flown with
+    c.execute("SELECT count(DISTINCT C1.aid) as c FROM Crew C1 WHERE C1.aid <> ? AND C1.mid IN (SELECT C2.mid FROM Crew C2 WHERE C2.aid = ?);", (aid,aid))
+    result = c.fetchone()
+    d["Number of Unique Crewmates"] = result["c"]
+
+    #years of experience
+    c.execute("SELECT strftime('%Y','now') - strftime('%Y',min(M.launchTime)) AS yearsOfExperience FROM Astronauts A, Mission M, Crew C WHERE A.aid = ? AND A.aid = C.aid AND C.mid = M.mid;", (aid,))
+    #Taking the max will ensure that if the astronaut is only assigned to missions in future years, their years of experience will not be negative.
+    d["Years of Experience"] = max(0, c.fetchone()["yearsOfExperience"])
+
+    #year when they flew the most number of their missions
+    c.execute("SELECT year AS y, max(numMissions) AS n FROM (SELECT strftime('%Y',M1.launchTime) AS year, count(M1.mid) AS numMissions FROM Astronauts A1, Mission M1, Crew C1 WHERE A1.aid = ? AND A1.aid = C1.aid AND C1.mid = M1.mid GROUP BY year);", (aid,))
+    result = c.fetchone()
+    d["Year With Their Highest Number of Missions"] = str(result["y"]) + " (" + str(result["n"]) + " missions flown)"
+    
+    conn.commit()
+    conn.close()
+    
+    return d
 
 if __name__ == "__main__":
     app.run()
