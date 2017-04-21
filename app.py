@@ -12,22 +12,28 @@ app.config["SECRET_KEY"] = "secret"
 
 @app.route("/")
 def index():
+    """Serves up the home page."""
     if not current_user.is_authenticated:
+        #render home page without computing information to pass to it since the anonymous user won't be able to that info
         return render_template("index.html")
     else:
+        #get rows of mission data to display on home page for authenticated user
         previousMissionRows = DBgetRealTimeMissionInfo("previous")
         currentMissionsRows = DBgetRealTimeMissionInfo("current")
         nextMissionRows = DBgetRealTimeMissionInfo("next")
 
+        #give the results some nicely formatted headers instead of displaying the internal DB attribute names
         previousMissionHeaders=("Rocket", "Fuel Burned", "Fuel Remaining", "Launch Facility", "Landing Time", "Crew Members")
         currentMissionHeaders=("Rocket", "Fuel Burned", "Fuel Remaining", "Launch Facility", "Elapsed Mission Time", "Remaining Mission Time", "Crew Members")
         nextMissionHeaders=("Rocket", "Fuel Required", "Fuel To Spare", "Launch Facility", "Launch Time", "Countdown To Launch", "Crew Members")
 
+        #render home page and pass it all the information it needs to construct the page
         return render_template("index.html", pHeaders=previousMissionHeaders, pRows=previousMissionRows, cHeaders=currentMissionHeaders, cRows=currentMissionsRows, nHeaders=nextMissionHeaders, nRows=nextMissionRows)
 
 @app.route("/missions", methods=["GET", "POST"])
 @login_required
 def showMissions():
+    """Serves up the missions page"""
     #open database connection
     conn = sqlite3.connect(dbPath)
     conn.row_factory = sqlite3.Row
@@ -45,7 +51,7 @@ def showMissions():
                 conn.commit()
                 return redirect(url_for("showMissions"))
         if request.form["launchTime"]:
-            #in this case we know the add new mission form was submitted, add mission to database
+            #in this case we know the add new mission form was submitted so add mission to database
             missionValues = (request.form["rid"], request.form["fid"], request.form["launchTime"], request.form["landTime"])
             c.execute("INSERT INTO Mission (rid, fid, launchTime, landTime) VALUES (?, ?, ?, ?)", missionValues)
             #make a list of pairs of the mission id we just created with each crew member's id
@@ -80,6 +86,7 @@ def showMissions():
 @app.route("/launch_facilities", methods=["GET", "POST"])
 @login_required
 def showFacilities():
+    """Serves up the launch facilities page. See the similar showMissions function for more comments"""
     conn = sqlite3.connect(dbPath)
     conn.row_factory = sqlite3.Row
     c = conn.cursor()
@@ -109,6 +116,7 @@ def showFacilities():
 @app.route("/rockets", methods=["GET", "POST"])
 @login_required
 def showRockets():
+    """Serves up the rockets page. See the similar showMissions function for more comments"""
     conn = sqlite3.connect(dbPath)
     conn.row_factory = sqlite3.Row
     c = conn.cursor()
@@ -137,6 +145,7 @@ def showRockets():
 @app.route("/astronauts", methods=["GET", "POST"])
 @login_required
 def showAstronauts():
+    """Serves up the astronauts page. See the similar showMissions function for more comments"""
     conn = sqlite3.connect(dbPath)
     conn.row_factory = sqlite3.Row
     c = conn.cursor()
@@ -165,21 +174,26 @@ def showAstronauts():
 @app.route("/astronauts/<aid>")
 @login_required
 def showAstronautInfo(aid):
+    """Serves up the astronaut info page."""
+    #open DB
     conn = sqlite3.connect(dbPath)
     conn.row_factory = sqlite3.Row
     c = conn.cursor()
    
+    #this is just to pass the astronaut's name to display in the page title
     c.execute("SELECT firstName, lastName, dob FROM Astronauts WHERE aid = ?", (aid,))
     results = c.fetchone()
     
     conn.commit()
     conn.close()
 
-    return render_template("astronaut_info.html", first=results["firstName"], last=results["lastName"], dob=results["dob"], info=DBgetAstronautStatsDictionary(aid))
+    #render page passing name and also the dictionary of interesting astronaut information returned by DBgetAstronautStatsDictionary()
+    return render_template("astronaut_info.html", first=results["firstName"], last=results["lastName"], info=DBgetAstronautStatsDictionary(aid))
 
 @app.route("/users")
 @login_required
 def showUsers():
+    """Serves up the website user list page."""
     conn = sqlite3.connect(dbPath)
     conn.row_factory = sqlite3.Row
     c = conn.cursor()
@@ -194,19 +208,27 @@ def showUsers():
 
 @app.route("/login", methods=["GET", "POST"])
 def showLogin():
+    """Serves up the login page."""
+    #if the logged in user somehow tries to access this page, redirect
     if current_user.is_authenticated:
         return redirect(url_for("index"))
     userNotFound=""
     wrongPassword=""
     if request.method == "POST":
+        #user has submitted their login information, get the DB record matching the username provided, if it exists
         userRecord = DBgetUser(request.form["username"])
         if userRecord:
+            #if user with the provided username exists in DB, create User object for that user
+            #note that the true parameter tells constructor the password we're giving it is already hashed, since it came from DB
             user = User(userRecord["username"], userRecord["password"], True)
+            #check password
             if user.check_password(request.form["password"]):
                 user.authenticated = True
                 #login user to flask_login session
                 login_user(user)
+                #record a login event for this user in the DB, which updates their last login time
                 DBloginUser(user.id)
+                #user is now logged in, redirect to home page
                 return redirect(url_for("index"))
             else:
                 print("wrong password")
@@ -215,20 +237,25 @@ def showLogin():
             print("user not found")
             userNotFound="User doesn't exist"
 
+    #this information will be used by the Jinja to render login form
     formInputs = [['username', 'text', 'Username', []], ['password', 'password', 'Password', []]]
     return render_template("login.html", inputs=formInputs, userNotFound=userNotFound, wrongPassword=wrongPassword)
        
 @app.route("/signup", methods=["GET", "POST"])
 def showSignup():
+    """Serves up the signup page."""
+    #a logged in user shouldn't see the signup page, redirect to home page
     if current_user.is_authenticated:
         return redirect(url_for("index"))
     UserNameAlreadyExists = ""
     if request.method == "POST":
+        #user has submitted signup form, check if the username they entered is already taken
         if DBgetUser(request.form["username"]):
             UserNameAlreadyExists = "Username already exists, try again"
         else:
+            #the user should not be able to get to this point if logged in, but log out just in case
             logout_user()
-            #creates user object, false meaning password being passed in is unhashed
+            #creates user object, the false parameter indicates password being passed in is unhashed
             user = User(request.form["username"], request.form["password"], False)
             user.authenticated = True
             #login user to flask_login session
@@ -239,19 +266,28 @@ def showSignup():
             DBloginUser(request.form["username"])
             return redirect(url_for("index"))
 
+    #information that Jinja will use to generate the login form when rendering the page
     formInputs = [['firstName', 'text', 'First Name', []], ['lastName', 'text', 'Last Name', []], ['username', 'text', 'Username', []], ['password', 'password', 'Password', []]]
     return render_template("signup.html", inputs=formInputs, UserNameAlreadyExists=UserNameAlreadyExists)
 
 @app.route("/logout")
 def showLogout():
+    """Serves up the logout page."""
+    #logged out user shouldn't be able to see this page, redirect
     if not current_user.is_authenticated:
         return redirect(url_for("index"))
+    #logout of flask_login session
     logout_user()
     return render_template("logout.html")
 
 class User(UserMixin):
-
+    """My user class which inherits from UserMixin provided by flask_login"""
     def __init__(self, username, password, isPasswordHashedAlready):
+        """Creates a User object with the provided username and password.
+        Bool isPasswordHashedAlready indicates if the provided password needs to be hashed and salted
+        (as in when the user is registering) or not (as in if we are loading user information from database
+        where password is already hashed and salted)."""
+
         self.id = username
         if isPasswordHashedAlready:
             self.pw_hash = password
@@ -266,6 +302,7 @@ class User(UserMixin):
 
 @login_manager.user_loader
 def load_user(username):
+    """Required by flask_login to return a User object given a username"""
     userRecord = DBgetUser(username)
 
     if userRecord:
@@ -274,6 +311,7 @@ def load_user(username):
     return None
 
 def DBgetUser(username):
+    """Given a username, return SQL row of that user from DB if it exists"""
     conn = sqlite3.connect(dbPath)
     conn.row_factory = sqlite3.Row
     c = conn.cursor()
@@ -286,6 +324,7 @@ def DBgetUser(username):
     return userRecord
 
 def DBaddUser(firstname, lastname, username, password):
+    """Adds user record to DB"""
     conn = sqlite3.connect(dbPath)
     conn.row_factory = sqlite3.Row
     c = conn.cursor()
@@ -294,6 +333,7 @@ def DBaddUser(firstname, lastname, username, password):
     conn.close()
 
 def DBloginUser(username):
+    """Updates last login time in the DB for the user with the provided username"""
     conn = sqlite3.connect(dbPath)
     conn.row_factory = sqlite3.Row
     c = conn.cursor()
@@ -302,6 +342,7 @@ def DBloginUser(username):
     conn.close()
 
 def DBgetRealTimeMissionInfo(pointInTime):
+    """Returns information about the most recent mission, next scheduled mission, or current missions in progress"""
     conn = sqlite3.connect(dbPath)
     conn.row_factory = sqlite3.Row
     c = conn.cursor()
@@ -323,6 +364,7 @@ def DBgetRealTimeMissionInfo(pointInTime):
     return result
 
 def DBgetAstronautStatsDictionary(aid):
+    """Returns a dictionary of interesting astronaut information"""
     conn = sqlite3.connect(dbPath)
     conn.row_factory = sqlite3.Row
     c = conn.cursor()
