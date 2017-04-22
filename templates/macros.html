@@ -68,7 +68,7 @@
 				{% endfor %}
 				</select></label>
 			{% elif fieldType == 'datetime' %}
-				<label for="{{fieldName}}"><span>{{fieldLabel}} <span class="required">*</span></br>(YYYY-MM-DDTHH:MM:SS)</span><input type="datetime-local" class="input-field" name="{{fieldName}}" id="{{optionalValues[0]}}" onchange="changeEnd()" required></label>
+				<label for="{{fieldName}}"><span>{{fieldLabel}} <span class="required">*</span></br>(YYYY-MM-DDTHH:MM)</span><input type="datetime-local" class="input-field" name="{{fieldName}}" id="{{optionalValues[0]}}" onchange="changeEnd()" required></label>
 			{% elif fieldType == 'date' %}
 				<label for="{{fieldName}}"><span>{{fieldLabel}} <span class="required">*</span></br>(YYYY-MM-DD)</span><input type="date" class="input-field" name="{{fieldName}}" required></label>
 			{% elif fieldType == 'radio' %}
