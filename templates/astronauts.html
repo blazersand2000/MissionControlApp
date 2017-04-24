@@ -11,4 +11,7 @@ Astronauts
 <section style="float:left">
 	{{ GenerateFormToAddEntry('Add Astronaut', inputs) }}
 </section>
+<section style="float:left">
+	{{ GenerateTable('Astronauts Flight History', historyHeader, historyRows, 'aid') }}
+</section>
 {% endblock %}
