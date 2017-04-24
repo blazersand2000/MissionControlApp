@@ -11,5 +11,16 @@ Missions
 <section style="float:left">
     {{ GenerateFormToAddEntry('Add Mission', inputs) }}
 </section>
+
+<section style="float:left">
+  <div class="form-style-2">
+  <div class="form-style-2-heading">Latitude Longitude</div>
+    <form method="post">
+      <label for="latitude"><span>Latitude</br>(##.######_[N|S])</span><input type="text" class="input-field" name="latitude"/></label>
+      <label for="longitude"><span>Longitude</br>(##.######_[N|S])</span><input type="text" class="input-field" name="longitude"/></label>
+    </form>
+  </div>
+</section>
+
 <script type="text/JavaScript" src="{{ url_for('static', filename='scripts.js') }}"></script>
 {% endblock %}
