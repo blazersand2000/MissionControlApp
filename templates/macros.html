@@ -49,13 +49,13 @@
 	<form method="post">
 		{% for fieldName, fieldType, fieldLabel, optionalValues in inputs %}
 			{% if fieldType == 'text' %}
-				<label for="{{fieldName}}"><span>{{fieldLabel}} <span class="required">*</span></span><input type="text" class="input-field" name="{{fieldName}}" required/></label>
+				<label for="{{fieldName}}"><span>{{fieldLabel}} <span class="required">*</span>{% if fieldName == 'lat' %}</br>(##.#####_[N|S]){% elif fieldName == 'long' %}</br>(##.#####_[E|W]){% endif %}</span><input type="text" class="input-field" name="{{fieldName}}" required/></label>
 			{% elif fieldType == 'password' %}
 				<label for="{{fieldName}}"><span>{{fieldLabel}} <span class="required">*</span></span><input type="password" class="input-field" name="{{fieldName}}" required/></label>
 			{% elif fieldType == 'number' %}
 				<label for="{{fieldName}}"><span>{{fieldLabel}} <span class="required">*</span></span><input type="number" class="input-field" name="{{fieldName}}" required/></label>
 			{% elif fieldType == 'select' %}
-				<label for="{{fieldName}}"><span>{{fieldLabel}} <span class="required">*</span></span><select name="{{fieldName}}" class="select-field" required>
+				<label for="{{fieldName}}"><span>{{fieldLabel}} <span class="required">*</span>{% if fieldName == 'fid' %} <sup>&dagger;</sup>{% endif %}</span><select name="{{fieldName}}" class="select-field" required>
 					<option disabled selected value> -- select {{fieldLabel}} -- </option>
 					{% for id, displayName in optionalValues %}
 						<option value="{{id}}">{{displayName}}</option>
