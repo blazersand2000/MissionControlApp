@@ -80,7 +80,7 @@ def showMissions():
     
     #each list within the following list represents a form element we want to render and contains (form element name, type, label to display for it, and extra values if needed like to send list of astronauts to select multiple type)
     formInputs = [['rid', 'select', 'Rocket', rockets], ['fid', 'select', 'Launch Facility', facilities], ['crewMembers', 'selectmultiple', 'Crew Members', astronauts], ['launchTime', 'datetime', 'Launch Time', ["from",]], ['landTime', 'datetime', 'Land Time', ["to",]]]
-
+    print(current_user.permission)
     return render_template("missions.html", headers=("Rocket","Facility","Time of Launch", "Time of Landing", "Crew Members"), rows=results, inputs=formInputs)
     
 @app.route("/launch_facilities", methods=["GET", "POST"])
@@ -198,13 +198,13 @@ def showUsers():
     conn.row_factory = sqlite3.Row
     c = conn.cursor()
     
-    c.execute("SELECT U.uid, 0 AS cannotDelete, U.username, U.firstName, U.lastName, U.lastLoginTime FROM Users U, Permissions P WHERE U.pid = P.pid;")
+    c.execute("SELECT U.uid, 0 AS cannotDelete, U.username, U.firstName, U.lastName, P.pname, U.lastLoginTime FROM Users U, Permissions P WHERE U.pid = P.pid;")
     results = c.fetchall()
     
     conn.commit()
     conn.close()
-    
-    return render_template("users.html", headers=("Username","First Name","Last Name","Last Login"), rows=results)
+
+    return render_template("users.html", headers=("Username","First Name","Last Name", "Permission Level", "Last Login Time"), rows=results)
 
 @app.route("/login", methods=["GET", "POST"])
 def showLogin():
@@ -224,10 +224,12 @@ def showLogin():
             #check password
             if user.check_password(request.form["password"]):
                 #set User object permission based on permission for this user found in database
-                user.permission = userRecord["pid"]
+                # user.permission = userRecord["pid"]
                 user.authenticated = True
                 #login user to flask_login session
                 login_user(user)
+                current_user.permission = userRecord["pid"]
+                print(current_user.permission)
                 #record a login event for this user in the DB, which updates their last login time
                 DBloginUser(user.id)
                 #user is now logged in, redirect to home page
@@ -257,7 +259,7 @@ def showSignup():
             logout_user()
             #creates user object, the false parameter indicates password being passed in is unhashed
             user = User(request.form["username"], request.form["password"], False)
-            user.permission = request.form["permission"]
+            # user.permission = request.form["permission"]
             user.authenticated = True
             #login user to flask_login session
             login_user(user)
@@ -316,7 +318,10 @@ def load_user(username):
     userRecord = DBgetUser(username)
 
     if userRecord:
-        return User(userRecord["username"], userRecord["password"], True)
+        user = User(userRecord["username"], userRecord["password"], True)
+        user.permission = userRecord["pid"]
+
+        return user
 
     return None
 

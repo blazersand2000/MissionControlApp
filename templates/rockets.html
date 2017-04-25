@@ -1,5 +1,5 @@
 {% extends "main_template.html" %}
-{% from 'macros.html' import GenerateTable, GenerateFormToAddEntry %}
+{% from 'macros.html' import GenerateTable, GenerateFormToAddEntry with context %}
 
 {% block title %}
 Rockets
@@ -9,6 +9,8 @@ Rockets
 	{{ GenerateTable('Rockets', headers, rows, 'rid') }}
 </section>
 <section style="float:left">
-	{{ GenerateFormToAddEntry('Add Rocket', inputs) }}
+	{% if current_user.permission == 3 %}
+		{{ GenerateFormToAddEntry('Add Rocket', inputs) }}
+	{% endif %}
 </section>
 {% endblock %}
