@@ -14,13 +14,20 @@ Missions
 
 <section style="float:left">
   <div class="form-style-2">
-  <div class="form-style-2-heading">Latitude Longitude</div>
+  <div class="form-style-2-heading"><sup>&dagger;</sup> Find Nearest Launch Facility</div>
     <form method="post">
-      <label for="latitude"><span>Latitude</br>(##.######_[N|S])</span><input type="text" class="input-field" name="latitude"/></label>
-      <label for="longitude"><span>Longitude</br>(##.######_[N|S])</span><input type="text" class="input-field" name="longitude"/></label>
+      <label for="latitude"><span>Latitude</br>(##.######_[N|S])</span><input type="text" class="input-field" name="latitude" required></label>
+      <label for="longitude"><span>Longitude</br>(##.######_[E|W])</span><input type="text" class="input-field" name="longitude" required></label>
+  		<label><span>&nbsp;</span><input type="submit" name="action" value="Use Nearest Facility"/><label>
     </form>
   </div>
 </section>
+
+{% if closestFacility %}
+<script>
+document.getElementById('fid').value = {{closestFacility}};
+</script>
+{% endif %}
 
 <section style="float:left">
     {{ GenerateTable('Overlapping Missions', headersOverlap, rowsOverlap, 'mid') }}

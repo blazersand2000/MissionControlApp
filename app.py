@@ -2,6 +2,8 @@ from flask import Flask, render_template, redirect, request, url_for
 from flask_login import LoginManager, UserMixin, login_required, login_user, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 import sqlite3
+import re
+import math
 
 dbPath = 'db.sqlite3'
 
@@ -38,6 +40,7 @@ def showMissions():
     conn = sqlite3.connect(dbPath)
     conn.row_factory = sqlite3.Row
     c = conn.cursor()
+    closestFacility = ""
     
     if request.method == "POST":
         #determine which form was sent
@@ -50,7 +53,7 @@ def showMissions():
                 c.execute("DELETE FROM Crew WHERE mid = ?", (id,))
                 conn.commit()
                 return redirect(url_for("showMissions"))
-        if request.form["launchTime"]:
+        if request.form["action"] == 'Add Mission':
             #in this case we know the add new mission form was submitted so add mission to database
             missionValues = (request.form["rid"], request.form["fid"], request.form["launchTime"], request.form["landTime"])
             c.execute("INSERT INTO Mission (rid, fid, launchTime, landTime) VALUES (?, ?, ?, ?)", missionValues)
@@ -58,6 +61,22 @@ def showMissions():
             astroValues = zip((c.lastrowid,) * len(request.form.getlist("crewMembers")), request.form.getlist("crewMembers"))
             #add row in crew table for each one of these pairs
             c.executemany("INSERT INTO Crew (mid, aid) VALUES (?, ?)", astroValues)
+        elif request.form["action"] == 'Use Nearest Facility':
+            # find nearest base
+            baseLat  = request.form["latitude"]
+            baseLong = request.form["longitude"]
+            baseFloatLat  = getFloatFromLatlong( baseLat )
+            baseFloatLong = getFloatFromLatlong( baseLong )
+            closestDistance = float("inf")
+            for record in c.execute("SELECT fid, lat, long FROM LaunchFacility"):
+                currentFloatLat  = getFloatFromLatlong( record['lat'] )
+                currentFloatLong = getFloatFromLatlong( record['long'] )
+                latdiff  = baseFloatLat  - currentFloatLat
+                longdiff = baseFloatLong - currentFloatLong
+                currentDistance = math.sqrt( latdiff*latdiff + longdiff*longdiff )
+                if currentDistance < closestDistance:
+                    closestDistance = currentDistance
+                    closestFacility = record['fid']
 
     #Done handling http POST request. In either a GET or a POST, we now need to gather the data to render the page
     
@@ -85,7 +104,12 @@ def showMissions():
     #each list within the following list represents a form element we want to render and contains (form element name, type, label to display for it, and extra values if needed like to send list of astronauts to select multiple type)
     formInputs = [['rid', 'select', 'Rocket', rockets], ['fid', 'select', 'Launch Facility', facilities], ['crewMembers', 'selectmultiple', 'Crew Members', astronauts], ['launchTime', 'datetime', 'Launch Time', ["from",]], ['landTime', 'datetime', 'Land Time', ["to",]]]
 
-    return render_template("missions.html", headers=("Rocket","Facility","Time of Launch", "Time of Landing", "Crew Members"), rows=results, inputs=formInputs, headersOverlap=("Firstname", "Lastname", "Overlapping Missions"), rowsOverlap=overlap)
+    return render_template("missions.html", headers=("Rocket","Facility","Time of Launch", "Time of Landing", "Crew Members"), rows=results, inputs=formInputs, headersOverlap=("Firstname", "Lastname", "Overlapping Missions"), rowsOverlap=overlap, closestFacility=closestFacility)
+
+def getFloatFromLatlong( latlongString ):
+    matchLatlong  = re.match('(\d+\.\d+)_([NSEW])', latlongString)
+    return float( matchLatlong.group(1) ) * \
+                  (-1.0 if re.match('[SW]', matchLatlong.group(2)) else 1.0)
     
 @app.route("/launch_facilities", methods=["GET", "POST"])
 @login_required
