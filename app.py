@@ -2,6 +2,8 @@ from flask import Flask, render_template, redirect, request, url_for
 from flask_login import LoginManager, UserMixin, login_required, login_user, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 import sqlite3
+import re
+import math
 
 dbPath = 'db.sqlite3'
 
@@ -38,6 +40,7 @@ def showMissions():
     conn = sqlite3.connect(dbPath)
     conn.row_factory = sqlite3.Row
     c = conn.cursor()
+    closestFacility = ""
     
     if request.method == "POST":
         #determine which form was sent
@@ -50,7 +53,7 @@ def showMissions():
                 c.execute("DELETE FROM Crew WHERE mid = ?", (id,))
                 conn.commit()
                 return redirect(url_for("showMissions"))
-        if request.form["launchTime"]:
+        if request.form["action"] == 'Add Mission':
             #in this case we know the add new mission form was submitted so add mission to database
             missionValues = (request.form["rid"], request.form["fid"], request.form["launchTime"], request.form["landTime"])
             c.execute("INSERT INTO Mission (rid, fid, launchTime, landTime) VALUES (?, ?, ?, ?)", missionValues)
@@ -58,6 +61,22 @@ def showMissions():
             astroValues = zip((c.lastrowid,) * len(request.form.getlist("crewMembers")), request.form.getlist("crewMembers"))
             #add row in crew table for each one of these pairs
             c.executemany("INSERT INTO Crew (mid, aid) VALUES (?, ?)", astroValues)
+        elif request.form["action"] == 'Use Nearest Facility':
+            # find nearest base
+            baseLat  = request.form["latitude"]
+            baseLong = request.form["longitude"]
+            baseFloatLat  = getFloatFromLatlong( baseLat )
+            baseFloatLong = getFloatFromLatlong( baseLong )
+            closestDistance = float("inf")
+            for record in c.execute("SELECT fid, lat, long FROM LaunchFacility"):
+                currentFloatLat  = getFloatFromLatlong( record['lat'] )
+                currentFloatLong = getFloatFromLatlong( record['long'] )
+                latdiff  = baseFloatLat  - currentFloatLat
+                longdiff = baseFloatLong - currentFloatLong
+                currentDistance = math.sqrt( latdiff*latdiff + longdiff*longdiff )
+                if currentDistance < closestDistance:
+                    closestDistance = currentDistance
+                    closestFacility = record['fid']
 
     #Done handling http POST request. In either a GET or a POST, we now need to gather the data to render the page
     
@@ -73,15 +92,24 @@ def showMissions():
     facilities = c.fetchall()
     c.execute("SELECT aid, firstName || ' ' || lastName FROM Astronauts")
     astronauts = c.fetchall()
-    
+
+    #Query that finds if any astronaut is scheduled for overlapping missions
+    c.execute("SELECT A.aid, 1, A.firstName, A.lastName, group_concat(M1.mid || ' and ' || M2.mid) as overlappingMissions FROM Astronauts A, Mission M1, Mission M2, Crew C1, Crew C2 WHERE C1.aid = A.aid AND C2.aid = A.aid AND C1.mid = M1.mid AND C2.mid = M2.mid AND strftime('%s', M1.launchTime) < strftime('%s', M2.launchTime) AND strftime('%s', M1.landTime) > strftime('%s', M2.landTime);")
+    overlap = c.fetchall()
+
     #close database connection
     conn.commit()
     conn.close()
     
     #each list within the following list represents a form element we want to render and contains (form element name, type, label to display for it, and extra values if needed like to send list of astronauts to select multiple type)
     formInputs = [['rid', 'select', 'Rocket', rockets], ['fid', 'select', 'Launch Facility', facilities], ['crewMembers', 'selectmultiple', 'Crew Members', astronauts], ['launchTime', 'datetime', 'Launch Time', ["from",]], ['landTime', 'datetime', 'Land Time', ["to",]]]
-    print(current_user.permission)
-    return render_template("missions.html", headers=("Rocket","Facility","Time of Launch", "Time of Landing", "Crew Members"), rows=results, inputs=formInputs)
+
+    return render_template("missions.html", headers=("Rocket","Facility","Time of Launch", "Time of Landing", "Crew Members"), rows=results, inputs=formInputs, headersOverlap=("Firstname", "Lastname", "Overlapping Missions"), rowsOverlap=overlap, closestFacility=closestFacility)
+
+def getFloatFromLatlong( latlongString ):
+    matchLatlong  = re.match('(\d+\.\d+)_([NSEW])', latlongString)
+    return float( matchLatlong.group(1) ) * \
+                  (-1.0 if re.match('[SW]', matchLatlong.group(2)) else 1.0)
     
 @app.route("/launch_facilities", methods=["GET", "POST"])
 @login_required
@@ -135,13 +163,16 @@ def showRockets():
     c.execute("SELECT rid, rid IN (SELECT rid FROM Mission) AS cannotDelete, rname, thrust, vendor, fuelTankSize, fuelBurnRate, crewCapacity FROM Rockets")
     results = c.fetchall()
     
+    c.execute("SELECT R.rid, 1, R.rname, A.firstName, A.lastName, SUM((strftime('%s', m.landTime) - strftime('%s', m.launchTime))/3600.0) as timeHours FROM Rockets R, Astronauts A, Mission M, Crew C WHERE A.aid=C.aid AND C.mid=M.mid AND R.rid=M.rid GROUP BY R.rname, A.firstName HAVING timeHours > (SELECT SUM((strftime('%s', m1.landTime) - strftime('%s', m1.launchTime))/3600.0) FROM Rockets R1, Astronauts A1, Mission M1, Crew C1 WHERE A1.aid=C1.aid AND C1.mid=M1.mid AND R1.rid=M1.rid AND A.aid <> A1.aid AND R1.rid = R.rid);")
+    experiencedAstros = c.fetchall()
+
     formInputs = [['rname', 'text', 'Rocket Name', []], ['thrust', 'number', 'Thrust', []], ['vendor', 'text', 'Vendor', []], ['fuelTankSize', 'number', 'Fuel Tank Size', []], ['fuelBurnRate', 'number', 'Fuel Burn Rate', []], ['crewCapacity', 'number', 'Crew Capacity', []]]
-    
+
     conn.commit()
     conn.close()
     
-    return render_template("rockets.html", headers=("Rocket Name","Thrust","Vendor","Fuel Tank Size","Fuel Burn Rate", "Crew Capacity"), rows=results, inputs=formInputs)
-       
+    return render_template("rockets.html", headers=("Rocket Name","Thrust","Vendor","Fuel Tank Size","Fuel Burn Rate", "Crew Capacity"), rows=results, inputs=formInputs, headersAstro=("Rocket Name", "First Name", "Last Name", "Hours Flown"), rowsAstro=experiencedAstros)
+   
 @app.route("/astronauts", methods=["GET", "POST"])
 @login_required
 def showAstronauts():
@@ -163,13 +194,17 @@ def showAstronauts():
    
     c.execute("SELECT aid, A.aid IN (SELECT aid FROM Crew) AS cannotDelete, firstName, lastName, dob, (SELECT SUM((strftime('%s',M.landTime) - strftime('%s',M.launchTime))/3600.0) FROM Mission M, Crew C WHERE M.mid = C.mid AND C.aid = A.aid) AS hoursFlown FROM Astronauts A")
     results = c.fetchall()
+
+    #Query to find which rocket each astronaut has flown on
+    c.execute("SELECT A.aid, 1, A.firstName, A.lastName, group_concat(DISTINCT R.rname) as Rockets FROM Astronauts A, Crew C, Mission M, Rockets R WHERE A.aid = C.aid AND C.mid = M.mid AND R.rid = M.rid GROUP BY A.firstName, A.lastName ORDER BY COUNT(DISTINCT R.rname) DESC;")
+    astroHistory = c.fetchall()
     
     formInputs = [['firstName', 'text', 'First Name', []], ['lastName', 'text', 'Last Name', []], ['dob', 'date', 'Date of Birth', []]]
     
     conn.commit()
     conn.close()
     
-    return render_template("astronauts.html", headers=("First Name","Last Name","Date of Birth","Hours Flown"), rows=results, inputs=formInputs)
+    return render_template("astronauts.html", headers=("First Name","Last Name","Date of Birth","Hours Flown"), rows=results, inputs=formInputs, historyHeader=("Firstname", "Lastname", "Rockets Flown On"), historyRows=astroHistory)
 
 @app.route("/astronauts/<aid>")
 @login_required
@@ -183,7 +218,7 @@ def showAstronautInfo(aid):
     #this is just to pass the astronaut's name to display in the page title
     c.execute("SELECT firstName, lastName, dob FROM Astronauts WHERE aid = ?", (aid,))
     results = c.fetchone()
-    
+
     conn.commit()
     conn.close()
 
