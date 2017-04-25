@@ -22,5 +22,9 @@ Missions
   </div>
 </section>
 
+<section style="float:left">
+    {{ GenerateTable('Overlapping Missions', headersOverlap, rowsOverlap, 'mid') }}
+</section>
+
 <script type="text/JavaScript" src="{{ url_for('static', filename='scripts.js') }}"></script>
 {% endblock %}

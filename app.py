@@ -73,7 +73,11 @@ def showMissions():
     facilities = c.fetchall()
     c.execute("SELECT aid, firstName || ' ' || lastName FROM Astronauts")
     astronauts = c.fetchall()
-    
+
+    #Query that finds if any astronaut is scheduled for overlapping missions
+    c.execute("SELECT A.aid, 1, A.firstName, A.lastName, group_concat(M1.mid || ' and ' || M2.mid) as overlappingMissions FROM Astronauts A, Mission M1, Mission M2, Crew C1, Crew C2 WHERE C1.aid = A.aid AND C2.aid = A.aid AND C1.mid = M1.mid AND C2.mid = M2.mid AND strftime('%s', M1.launchTime) < strftime('%s', M2.launchTime) AND strftime('%s', M1.landTime) > strftime('%s', M2.landTime);")
+    overlap = c.fetchall()
+
     #close database connection
     conn.commit()
     conn.close()
@@ -81,7 +85,7 @@ def showMissions():
     #each list within the following list represents a form element we want to render and contains (form element name, type, label to display for it, and extra values if needed like to send list of astronauts to select multiple type)
     formInputs = [['rid', 'select', 'Rocket', rockets], ['fid', 'select', 'Launch Facility', facilities], ['crewMembers', 'selectmultiple', 'Crew Members', astronauts], ['launchTime', 'datetime', 'Launch Time', ["from",]], ['landTime', 'datetime', 'Land Time', ["to",]]]
 
-    return render_template("missions.html", headers=("Rocket","Facility","Time of Launch", "Time of Landing", "Crew Members"), rows=results, inputs=formInputs)
+    return render_template("missions.html", headers=("Rocket","Facility","Time of Launch", "Time of Landing", "Crew Members"), rows=results, inputs=formInputs, headersOverlap=("Firstname", "Lastname", "Overlapping Missions"), rowsOverlap=overlap)
     
 @app.route("/launch_facilities", methods=["GET", "POST"])
 @login_required
@@ -135,13 +139,16 @@ def showRockets():
     c.execute("SELECT rid, rid IN (SELECT rid FROM Mission) AS cannotDelete, rname, thrust, vendor, fuelTankSize, fuelBurnRate, crewCapacity FROM Rockets")
     results = c.fetchall()
     
+    c.execute("SELECT R.rid, 1, R.rname, A.firstName, A.lastName, SUM((strftime('%s', m.landTime) - strftime('%s', m.launchTime))/3600.0) as timeHours FROM Rockets R, Astronauts A, Mission M, Crew C WHERE A.aid=C.aid AND C.mid=M.mid AND R.rid=M.rid GROUP BY R.rname, A.firstName HAVING timeHours > (SELECT SUM((strftime('%s', m1.landTime) - strftime('%s', m1.launchTime))/3600.0) FROM Rockets R1, Astronauts A1, Mission M1, Crew C1 WHERE A1.aid=C1.aid AND C1.mid=M1.mid AND R1.rid=M1.rid AND A.aid <> A1.aid AND R1.rid = R.rid);")
+    experiencedAstros = c.fetchall()
+
     formInputs = [['rname', 'text', 'Rocket Name', []], ['thrust', 'number', 'Thrust', []], ['vendor', 'text', 'Vendor', []], ['fuelTankSize', 'number', 'Fuel Tank Size', []], ['fuelBurnRate', 'number', 'Fuel Burn Rate', []], ['crewCapacity', 'number', 'Crew Capacity', []]]
-    
+
     conn.commit()
     conn.close()
     
-    return render_template("rockets.html", headers=("Rocket Name","Thrust","Vendor","Fuel Tank Size","Fuel Burn Rate", "Crew Capacity"), rows=results, inputs=formInputs)
-       
+    return render_template("rockets.html", headers=("Rocket Name","Thrust","Vendor","Fuel Tank Size","Fuel Burn Rate", "Crew Capacity"), rows=results, inputs=formInputs, headersAstro=("Rocket Name", "First Name", "Last Name", "Hours Flown"), rowsAstro=experiencedAstros)
+   
 @app.route("/astronauts", methods=["GET", "POST"])
 @login_required
 def showAstronauts():
@@ -163,13 +170,17 @@ def showAstronauts():
    
     c.execute("SELECT aid, A.aid IN (SELECT aid FROM Crew) AS cannotDelete, firstName, lastName, dob, (SELECT SUM((strftime('%s',M.landTime) - strftime('%s',M.launchTime))/3600.0) FROM Mission M, Crew C WHERE M.mid = C.mid AND C.aid = A.aid) AS hoursFlown FROM Astronauts A")
     results = c.fetchall()
+
+    #Query to find which rocket each astronaut has flown on
+    c.execute("SELECT A.aid, 1, A.firstName, A.lastName, group_concat(DISTINCT R.rname) as Rockets FROM Astronauts A, Crew C, Mission M, Rockets R WHERE A.aid = C.aid AND C.mid = M.mid AND R.rid = M.rid GROUP BY A.firstName, A.lastName ORDER BY COUNT(DISTINCT R.rname) DESC;")
+    astroHistory = c.fetchall()
     
     formInputs = [['firstName', 'text', 'First Name', []], ['lastName', 'text', 'Last Name', []], ['dob', 'date', 'Date of Birth', []]]
     
     conn.commit()
     conn.close()
     
-    return render_template("astronauts.html", headers=("First Name","Last Name","Date of Birth","Hours Flown"), rows=results, inputs=formInputs)
+    return render_template("astronauts.html", headers=("First Name","Last Name","Date of Birth","Hours Flown"), rows=results, inputs=formInputs, historyHeader=("Firstname", "Lastname", "Rockets Flown On"), historyRows=astroHistory)
 
 @app.route("/astronauts/<aid>")
 @login_required
@@ -183,7 +194,7 @@ def showAstronautInfo(aid):
     #this is just to pass the astronaut's name to display in the page title
     c.execute("SELECT firstName, lastName, dob FROM Astronauts WHERE aid = ?", (aid,))
     results = c.fetchone()
-    
+
     conn.commit()
     conn.close()
 
