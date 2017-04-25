@@ -3,6 +3,7 @@ from flask_login import LoginManager, UserMixin, login_required, login_user, log
 from werkzeug.security import generate_password_hash, check_password_hash
 import sqlite3
 import re
+import math
 
 dbPath = 'db.sqlite3'
 
@@ -52,7 +53,7 @@ def showMissions():
                 c.execute("DELETE FROM Crew WHERE mid = ?", (id,))
                 conn.commit()
                 return redirect(url_for("showMissions"))
-        if request.form["launchTime"]:
+        if request.form["action"] == 'Add Mission':
             #in this case we know the add new mission form was submitted so add mission to database
             missionValues = (request.form["rid"], request.form["fid"], request.form["launchTime"], request.form["landTime"])
             c.execute("INSERT INTO Mission (rid, fid, launchTime, landTime) VALUES (?, ?, ?, ?)", missionValues)
@@ -60,7 +61,7 @@ def showMissions():
             astroValues = zip((c.lastrowid,) * len(request.form.getlist("crewMembers")), request.form.getlist("crewMembers"))
             #add row in crew table for each one of these pairs
             c.executemany("INSERT INTO Crew (mid, aid) VALUES (?, ?)", astroValues)
-        elif request.form["latitude"]:
+        elif request.form["action"] == 'Use Nearest Facility':
             # find nearest base
             baseLat  = request.form["latitude"]
             baseLong = request.form["longitude"]

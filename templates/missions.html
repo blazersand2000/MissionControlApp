@@ -18,14 +18,26 @@ Missions
     <form method="post">
       <label for="latitude"><span>Latitude</br>(##.######_[N|S])</span><input type="text" class="input-field" name="latitude" required></label>
       <label for="longitude"><span>Longitude</br>(##.######_[E|W])</span><input type="text" class="input-field" name="longitude" required></label>
-  		<label><span>&nbsp;</span><input type="submit" value="Use Nearest Facility"/><label>
+  		<label><span>&nbsp;</span><input type="submit" name="action" value="Use Nearest Facility"/><label>
     </form>
   </div>
 </section>
 
 {% if closestFacility %}
-<script>document.getElementByName("fid").value = {{closestFacility}}</script>
+<!-- 
+{{closestFacility}}
+-->
+<script>
+document.getElementById('fid').value = {{closestFacility}};
+</script>
+<!-- 
+setTimeout( function()
+            { document.getElementById('fid').value = {{closestFacility}};
+            }, 1000 );
+-->
+
 {% endif %}
+
 
 <script type="text/JavaScript" src="{{ url_for('static', filename='scripts.js') }}"></script>
 {% endblock %}
