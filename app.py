@@ -82,7 +82,7 @@ def showMissions():
     
     #queries that populate html table of missions to be rendered
     #note that || in SQLite means concatenation
-    c.execute("SELECT M.mid, M.mid IN (SELECT M1.mid FROM Mission M1 WHERE M1.launchTime < datetime('now')) AS cannotDelete, R.rname, F.name, M.launchTime, M.landTime, group_concat(A.firstName || ' ' || A.lastName, '<br/>') AS anames FROM Mission M, Rockets R, LaunchFacility F, Crew C, Astronauts A WHERE M.rid = R.rid AND M.fid = F.fid AND M.mid = C.mid AND C.aid = A.aid GROUP BY C.mid ORDER BY M.launchTime DESC;")
+    c.execute("SELECT M.mid, M.mid IN (SELECT M1.mid FROM Mission M1 WHERE strftime('%s', M1.launchTime) < strftime('%s', datetime('now'))) AS cannotDelete, R.rname, F.name, M.launchTime, M.landTime, group_concat(A.firstName || ' ' || A.lastName, '<br/>') AS anames FROM Mission M, Rockets R, LaunchFacility F, Crew C, Astronauts A WHERE M.rid = R.rid AND M.fid = F.fid AND M.mid = C.mid AND C.aid = A.aid GROUP BY C.mid ORDER BY M.launchTime DESC;")
     results = c.fetchall()
 
     #queries that populate rockets, facilities, and astronauts for the 'add new mission' form
@@ -94,7 +94,7 @@ def showMissions():
     astronauts = c.fetchall()
 
     #Query that finds if any astronaut is scheduled for overlapping missions
-    c.execute("SELECT A.aid, 1, A.firstName, A.lastName, group_concat(M1.mid || ' and ' || M2.mid) as overlappingMissions FROM Astronauts A, Mission M1, Mission M2, Crew C1, Crew C2 WHERE C1.aid = A.aid AND C2.aid = A.aid AND C1.mid = M1.mid AND C2.mid = M2.mid AND strftime('%s', M1.launchTime) < strftime('%s', M2.launchTime) AND strftime('%s', M1.landTime) > strftime('%s', M2.landTime);")
+    c.execute("SELECT A.aid, 1, A.firstName, A.lastName, group_concat(M1.mid || ' and ' || M2.mid) as overlappingMissions FROM Astronauts A, Mission M1, Mission M2, Crew C1, Crew C2 WHERE C1.aid = A.aid AND C2.aid = A.aid AND C1.mid = M1.mid AND C2.mid = M2.mid AND M1.mid <> M2.mid AND strftime('%s', M1.launchTime) < strftime('%s', M2.launchTime) AND strftime('%s', M1.landTime) > strftime('%s', M2.landTime);")
     overlap = c.fetchall()
 
     #close database connection
