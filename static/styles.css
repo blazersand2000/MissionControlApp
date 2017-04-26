@@ -73,9 +73,14 @@ h1.nav
 	color: var(--light-blue);
 }
 
+section
+{
+	margin: 5px;
+}
+
 table
 {
-    border-collapse: collapse;
+	border-collapse: collapse;
     width: 100%;
 	table-layout: auto;
 }
