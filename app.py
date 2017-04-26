@@ -438,7 +438,10 @@ def DBgetAstronautStatsDictionary(aid):
     #year when they flew the highest number of their overall missions
     c.execute("SELECT strftime('%Y',M1.launchTime) AS year, count(M1.mid) AS numMissions FROM Astronauts A1, Mission M1, Crew C1 WHERE A1.aid = ? AND A1.aid = C1.aid AND C1.mid = M1.mid GROUP BY year ORDER BY numMissions DESC LIMIT 1;", (aid,))
     result = c.fetchone()
-    d["Year With Their Highest Number of Missions"] = str(result["year"]) + " (" + str(result["numMissions"]) + " missions flown)"
+    if result:
+        d["Year With Their Highest Number of Missions"] = str(result["year"]) + " (" + str(result["numMissions"]) + " missions flown)"
+    else:
+        d["Year With Their Highest Number of Missions"] = "N/A"
     
     conn.commit()
     conn.close()
