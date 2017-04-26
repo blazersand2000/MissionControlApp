@@ -1,5 +1,5 @@
 {% extends "main_template.html" %}
-{% from 'macros.html' import GenerateTable, GenerateFormToAddEntry %}
+{% from 'macros.html' import GenerateTable, GenerateFormToAddEntry with context %}
 
 {% block title %}
 Astronauts
@@ -9,7 +9,9 @@ Astronauts
 	{{ GenerateTable('Astronauts', headers, rows, 'aid') }}
 </section>
 <section style="float:left">
-	{{ GenerateFormToAddEntry('Add Astronaut', inputs) }}
+	{% if current_user.permission == 3 %}
+		{{ GenerateFormToAddEntry('Add Astronaut', inputs) }}
+	{% endif %}
 </section>
 <section style="float:left">
 	{{ GenerateTable('Astronauts Flight History', historyHeader, historyRows, 'aid') }}

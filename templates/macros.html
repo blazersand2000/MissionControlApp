@@ -8,7 +8,9 @@
 				{% for header in headers %}
 				<th>{{header}}</th>
 				{% endfor %}
-				<th/>
+				{% if current_user.permission == 3 %}
+					<th/>
+				{% endif %}
 			</tr>
 			{% for row in rows %}
 			<tr id ="{{row[keyName]}}">
@@ -23,18 +25,22 @@
 						</td>
 					{% endif %}
 				{% endfor %}
+				<!--the user passes in as part of the results if the row cannot be deleted to determine if it should be disabled-->
 				{% if row[1] == 1 %}
 					{% set disabled = 'disabled' %}
 				{% else %}
 					{% set disabled = '' %}
 				{% endif %}
-				<td>
-					<div class="form-style-2" style="width:70px; padding: 0px 0px 0px 0px;">
-						<form method="post">
-							<input type="submit" value="Delete" name="delete.{{ row[0] }}" {{disabled}}/>
-						</form>
-					</div>
-				</td>
+				<!--only show delete button if the user has admin permissions-->
+				{% if current_user.permission == 3 %}
+					<td>
+						<div class="form-style-2" style="width:70px; padding: 0px 0px 0px 0px;">
+							<form method="post">
+								<input type="submit" value="Delete" name="delete.{{ row[0] }}" {{disabled}}/>
+							</form>
+						</div>
+					</td>
+				{% endif %}
 			</tr>
 			{% endfor %}
 		</table>
